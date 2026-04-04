@@ -32,66 +32,39 @@ export default function RootPage() {
     const fetchData = async (isInitial = true) => {
       if (isInitial) setLoading(true)
 
-      // Fetch user and session data first
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+      // Parallelize: Auth Session + Main Data Fetch
+      const [sessionPromise, _] = await Promise.all([
+        supabase.auth.getSession(),
+        (async () => {
+          const [lbRes, subRes] = await Promise.all([
+            supabase.from('leaderboard').select('id, github_username, total_points, total_time, tasks_completed').order('total_points', { ascending: false }).order('total_time', { ascending: true }),
+            supabase.from('task_completions').select('id, status, created_at, profile_id, profiles(email, github_username), tasks(title, difficulty, points)').order('created_at', { ascending: false }).limit(100)
+          ])
+          setLeaderboard(lbRes.data || [])
+          setSubmissions(subRes.data || [])
+        })()
+      ])
 
+      const user = sessionPromise.data.session?.user
+      setUser(user)
+      
       const storedUsername = localStorage.getItem('devsphere_github_username')
       setRegisteredUsername(storedUsername)
 
-      const fetchTasksAndLeaderboard = async () => {
-        const [lbResponse, subResponse] = await Promise.all([
-          supabase
-            .from('leaderboard')
-            .select('*')
-            .order('total_points', { ascending: false })
-            .order('total_time', { ascending: true }),
-          supabase
-            .from('task_completions')
-            .select(`
-              id,
-              status,
-              created_at,
-              profile_id,
-              profiles (email, github_username),
-              tasks (title, difficulty, points)
-            `)
-            .order('created_at', { ascending: false })
-            .limit(100) // Limit total submissions shown
+      if (user) {
+        // Parallelize Admin and Profile checks
+        const [adminRes, profileRes] = await Promise.all([
+          supabase.from('admins').select('email').eq('email', user.email).maybeSingle(),
+          supabase.from('profiles').select('github_username').eq('id', user.id).single()
         ])
 
-        if (lbResponse.error) console.error('Leaderboard fetch error:', lbResponse.error)
-        if (subResponse.error) console.error('Submissions fetch error:', subResponse.error)
-
-        setLeaderboard(lbResponse.data || [])
-        setSubmissions(subResponse.data || [])
-      }
-
-      // Check admin/onboarding status if user exists
-      if (user) {
-        const adminPromise = supabase
-          .from('admins')
-          .select('email')
-          .eq('email', user.email)
-          .maybeSingle()
-
-        const profilePromise = supabase
-          .from('profiles')
-          .select('github_username')
-          .eq('id', user.id)
-          .single()
-
-        const [adminRes, profileRes] = await Promise.all([adminPromise, profilePromise])
-
-        if (adminRes.data) {
-          setIsAdmin(true)
-        } else if (!profileRes.data?.github_username) {
+        if (adminRes.data) setIsAdmin(true)
+        else if (!profileRes.data?.github_username) {
           router.push('/onboarding')
           return
         }
       }
 
-      await fetchTasksAndLeaderboard()
       if (isInitial) setLoading(false)
     }
 
