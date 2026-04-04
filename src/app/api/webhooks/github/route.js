@@ -86,8 +86,17 @@ export async function POST(req) {
       .single()
     
     const eventStartTime = startTimeSetting ? new Date(startTimeSetting.value) : new Date(Date.now() - 3600000) // Default 1 hour ago
-    const currentTime = new Date()
-    const timeTakenSeconds = Math.floor((currentTime - eventStartTime) / 1000)
+    
+    // Get commit time from webhook payload
+    const commitTimestamp = body.commit_time
+    if (!commitTimestamp) {
+      return NextResponse.json({ error: 'Missing commit_time in payload' }, { status: 400 })
+    }
+    
+    const commitTime = new Date(commitTimestamp)
+    
+    // Calculate time difference (ensure it doesn't go negative if commit was before event start)
+    const timeTakenSeconds = Math.max(0, Math.floor((commitTime - eventStartTime) / 1000))
 
     // 5. Update Profile
     const { error: profileUpdateError } = await supabaseAdmin
