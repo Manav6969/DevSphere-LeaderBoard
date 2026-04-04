@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { Medal } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -9,12 +9,21 @@ export default function Leaderboard({ data, currentProfileId, highlightUsername 
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 10
 
-  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE)
-  const paginatedData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-
-  const absoluteUserIndex = data.findIndex(
-    entry => currentProfileId === entry.id || (highlightUsername && highlightUsername === entry.github_username)
+  const totalPages = useMemo(() => Math.ceil(data.length / ITEMS_PER_PAGE), [data.length])
+  
+  const paginatedData = useMemo(() => 
+    data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
+    [data, currentPage]
   )
+
+  const absoluteUserIndex = useMemo(() => 
+    data.findIndex(entry => 
+      currentProfileId === entry.id || 
+      (highlightUsername && highlightUsername === entry.github_username)
+    ),
+    [data, currentProfileId, highlightUsername]
+  )
+
   const userEntry = absoluteUserIndex !== -1 ? data[absoluteUserIndex] : null
 
   return (

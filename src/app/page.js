@@ -6,8 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Trophy, History, Github, CheckCircle2, User } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import Leaderboard from '@/components/Leaderboard'
-import SubmissionsList from '@/components/SubmissionsList'
+import dynamic from 'next/dynamic'
+
+const Leaderboard = dynamic(() => import('@/components/Leaderboard'), { 
+  loading: () => <div className="h-96 flex items-center justify-center bg-white/5 rounded-2xl animate-pulse text-gray-500">Loading Leaderboard...</div> 
+})
+const SubmissionsList = dynamic(() => import('@/components/SubmissionsList'), {
+  loading: () => <div className="h-96 flex items-center justify-center bg-white/5 rounded-2xl animate-pulse text-gray-500">Loading Submissions...</div>
+})
 import Link from 'next/link'
 
 export default function RootPage() {
@@ -26,72 +32,72 @@ export default function RootPage() {
     const fetchData = async (isInitial = true) => {
       if (isInitial) setLoading(true)
 
+      // Fetch user and session data first
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
 
       const storedUsername = localStorage.getItem('devsphere_github_username')
       setRegisteredUsername(storedUsername)
 
+      const fetchTasksAndLeaderboard = async () => {
+        const [lbResponse, subResponse] = await Promise.all([
+          supabase
+            .from('leaderboard')
+            .select('*')
+            .order('total_points', { ascending: false })
+            .order('total_time', { ascending: true }),
+          supabase
+            .from('task_completions')
+            .select(`
+              id,
+              status,
+              created_at,
+              profile_id,
+              profiles (email, github_username),
+              tasks (title, difficulty, points)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(100) // Limit total submissions shown
+        ])
+
+        if (lbResponse.error) console.error('Leaderboard fetch error:', lbResponse.error)
+        if (subResponse.error) console.error('Submissions fetch error:', subResponse.error)
+
+        setLeaderboard(lbResponse.data || [])
+        setSubmissions(subResponse.data || [])
+      }
+
+      // Check admin/onboarding status if user exists
       if (user) {
-        const { data: adminRecord } = await supabase
+        const adminPromise = supabase
           .from('admins')
           .select('email')
           .eq('email', user.email)
           .maybeSingle()
 
-        if (!adminRecord) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('github_username')
-            .eq('id', user.id)
-            .single()
+        const profilePromise = supabase
+          .from('profiles')
+          .select('github_username')
+          .eq('id', user.id)
+          .single()
 
-          if (!profile?.github_username) {
-            router.push('/onboarding')
-            return
-          }
-        } else {
+        const [adminRes, profileRes] = await Promise.all([adminPromise, profilePromise])
+
+        if (adminRes.data) {
           setIsAdmin(true)
+        } else if (!profileRes.data?.github_username) {
+          router.push('/onboarding')
+          return
         }
       }
 
-      // Fetch Leaderboard
-      const { data: lbData, error: lbError } = await supabase
-        .from('leaderboard')
-        .select('*')
-        .order('total_points', { ascending: false })
-        .order('total_time', { ascending: true })
-
-      if (lbError) console.error('Leaderboard fetch error:', lbError)
-      setLeaderboard(lbData || [])
-
-      // Fetch Submissions
-      const { data: subData, error: subError } = await supabase
-        .from('task_completions')
-        .select(`
-          id,
-          status,
-          created_at,
-          profile_id,
-          profiles (email, github_username),
-          tasks (title, difficulty, points)
-        `)
-        .order('created_at', { ascending: false })
-
-      if (subError) console.error('Submissions fetch error:', subError)
-      setSubmissions(subData || [])
-
+      await fetchTasksAndLeaderboard()
       if (isInitial) setLoading(false)
     }
 
     fetchData()
 
-    const error = searchParams.get('error')
-    if (error === 'unauthorized_admin') {
-      console.warn('Unauthorized admin access attempt.')
-    }
-
-    // Realtime subscription — silent background refresh
+    // Realtime subscription — only refresh data that changes
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, () => {
@@ -102,7 +108,7 @@ export default function RootPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [router, searchParams]) // Added missing dependencies
 
   const setTab = (tab) => {
     router.push(`/?tab=${tab}`)
