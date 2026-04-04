@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+    body { font-family: "Segoe UI", Roboto, "Helvetica Neue", sans-serif; line-height: 1.6; color: #111827; max-width: 900px; margin: 40px auto; padding: 20px; background-color: #ffffff; }
+    h1 { color: #5B21B6; border-bottom: 3px solid #5B21B6; padding-bottom: 15px; font-size: 32px; margin-bottom: 30px; }
+    h2 { color: #111827; margin-top: 40px; border-left: 6px solid #5B21B6; padding-left: 20px; background: #F3F4F6; padding-top: 10px; padding-bottom: 10px; }
+    h3 { color: #374151; margin-top: 25px; font-size: 20px; text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 25px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    th { background-color: #F9FAFB; font-weight: 800; border: 1px solid #D1D5DB; padding: 12px; text-align: left; }
+    td { border: 1px solid #D1D5DB; padding: 12px; text-align: left; vertical-align: top; }
+    code { background: #F3F4F6; padding: 3px 6px; border-radius: 4px; font-family: "Cascadia Code", Consolas, monospace; font-size: 0.9em; color: #BE185D; }
+    pre { background: #1F2937; color: #F3F4F6; padding: 20px; border-radius: 12px; overflow-x: auto; font-family: "Cascadia Code", Consolas, monospace; line-height: 1.4; margin: 20px 0; }
+    .type-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: uppercase; font-weight: bold; background: #E5E7EB; border: 1px solid #D1D5DB; }
+    .required { color: #DC2626; font-weight: bold; }
+    .endpoint { color: #059669; font-weight: bold; font-family: monospace; font-size: 1.1em; }
+</style>
+</head>
+<body>
+
+<h1>📜 DevSphere Tech Architecture & API Docs</h1>
+<p>This technical guide provides full schema definitions and payload examples for the DevSphere Leaderboard system integration.</p>
+
+<hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 40px 0;">
+
+<h2>🛰️ 1. External Webhook API</h2>
+<p>Used by GitHub Actions or automation scripts to grant points to participants.</p>
+
+<h3>Endpoint: <span class="endpoint">POST /api/webhooks/github</span></h3>
+
+<table>
+    <thead>
+        <tr>
+            <th>Payload Key</th>
+            <th>Data Type</th>
+            <th>Req?</th>
+            <th>Description / Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>sender.login</code></td>
+            <td><span class="type-pill">String</span></td>
+            <td><span class="required">YES</span></td>
+            <td>GitHub username from the sender. (e.g., <code>octocat</code>)</td>
+        </tr>
+        <tr>
+            <td><code>repository.full_name</code></td>
+            <td><span class="type-pill">String</span></td>
+            <td><span class="required">YES</span></td>
+            <td>Organization/Repo identifier for task mapping.</td>
+        </tr>
+        <tr>
+            <td><code>task_title</code></td>
+            <td><span class="type-pill">String</span></td>
+            <td><span class="required">YES</span></td>
+            <td>Category of the task (e.g., <code>web</code>, <code>ml</code>, <code>foss</code>).</td>
+        </tr>
+        <tr>
+            <td><code>difficulty</code></td>
+            <td><span class="type-pill">String</span></td>
+            <td><span class="required">YES</span></td>
+            <td>Task difficulty level (e.g., <code>easy</code>, <code>medium</code>, <code>hard</code>).</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>📦 Sample JSON Payload:</h3>
+<pre>{
+  "sender": {
+    "login": "k"
+  },
+  "repository": {
+    "full_name": "MyOrgs/MachineLearningChallenge"
+  },
+  "task_title": "ml",
+  "difficulty": "hard"
+}</pre>
+
+<h3>📦 Success Response (200 OK):</h3>
+<pre>{
+  "message": "Task completion recorded successfully"
+}</pre>
+
+<hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 40px 0;">
+
+<h2>🗄️ 2. Database Schema Definitions</h2>
+<p>The following tables represent the core data structures in Supabase.</p>
+
+<h3>Table: <code>profiles</code> (Participants)</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Column</th>
+            <th>Type</th>
+            <th>Constraint</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><code>id</code></td><td>UUID</td><td>Primary Key</td><td>Supabase Auth mapping.</td></tr>
+        <tr><td><code>email</code></td><td>Text</td><td>Unique</td><td>Verified college email.</td></tr>
+        <tr><td><code>github_username</code></td><td>Text</td><td>Unique</td><td>Unique identifier for rankings.</td></tr>
+        <tr><td><code>score</code></td><td>BigInt</td><td>Default 0</td><td>Aggregated total points.</td></tr>
+        <tr><td><code>time_taken</code></td><td>BigInt</td><td>-</td><td>Time in seconds since event start.</td></tr>
+    </tbody>
+</table>
+
+<h3>Table: <code>tasks</code> (Event Metadata)</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Column</th>
+            <th>Type</th>
+            <th>Constraint</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><code>id</code></td><td>UUID</td><td>Primary Key</td><td>Internal task ID.</td></tr>
+        <tr><td><code>github_identifier</code></td><td>Text</td><td>Unique</td><td>Match for <code>repository.full_name</code>.</td></tr>
+        <tr><td><code>title</code></td><td>Text</td><td>-</td><td>Task Category (Web, ML, etc).</td></tr>
+        <tr><td><code>difficulty</code></td><td>Text</td><td>-</td><td>Level (Easy, Med, Hard).</td></tr>
+        <tr><td><code>points</code></td><td>Integer</td><td>-</td><td>Reward amount for completion.</td></tr>
+    </tbody>
+</table>
+
+<h3>Table: <code>task_completions</code> (Transaction Log)</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Column</th>
+            <th>Type</th>
+            <th>Constraint</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><code>id</code></td><td>UUID</td><td>Primary Key</td><td>Transaction ID.</td></tr>
+        <tr><td><code>profile_id</code></td><td>UUID</td><td>FK (profiles)</td><td>Who completed it.</td></tr>
+        <tr><td><code>task_id</code></td><td>UUID</td><td>FK (tasks)</td><td>Which task was completed.</td></tr>
+        <tr><td><code>status</code></td><td>Enum</td><td>'valid' / 'invalid'</td><td>Admin toggle for validity.</td></tr>
+        <tr><td><code>payload</code></td><td>JSONB</td><td>-</td><td>Raw backup of the webhook data.</td></tr>
+    </tbody>
+</table>
+
+<hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 40px 0;">
+
+<h2>🔄 3. Internal Application Payloads</h2>
+
+<h3>Onboarding Flow (Participant Setup)</h3>
+<p>Triggered when a user first enters their GitHub id on <code>/onboarding</code>.</p>
+<pre>PATCH /rest/v1/profiles?id=eq.{user_id}
+{
+  "github_username": "fcuked",
+  "id": "e8a2..."
+}</pre>
+
+<h3>Admin Submission Validation</h3>
+<p>Admin hub action to manually invalidate or validate a result.</p>
+<pre>PATCH /rest/v1/task_completions?id=eq.{submission_id}
+{
+  "status": "invalid"
+}</pre>
+
+<p style="margin-top: 60px; font-size: 13px; color: #6B7280; text-align: center; border-top: 1px solid #E5E7EB; padding-top: 20px;">
+    Technical Specification Document • DevSphere v2.0 • Last Updated: April 2024
+</p>
+
+</body>
+</html>
