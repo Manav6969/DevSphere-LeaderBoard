@@ -63,6 +63,12 @@
             <td><span class="required">YES</span></td>
             <td>Task difficulty level (e.g., <code>easy</code>, <code>medium</code>, <code>hard</code>).</td>
         </tr>
+        <tr>
+            <td><code>commit_time</code></td>
+            <td><span class="type-pill">String</span></td>
+            <td><span class="required">YES</span></td>
+            <td>ISO-8601 timestamp of the commit (for calculating exact time taken).</td>
+        </tr>
     </tbody>
 </table>
 
@@ -75,7 +81,8 @@
     "full_name": "MyOrgs/MachineLearningChallenge"
   },
   "task_title": "ml",
-  "difficulty": "hard"
+  "difficulty": "hard",
+  "commit_time": "2026-04-04T15:25:00+05:30"
 }</pre>
 
 <h3>📦 Success Response (200 OK):</h3>
