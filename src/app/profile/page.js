@@ -114,14 +114,13 @@ export default function ProfilePage() {
             <div className="space-y-3">
               <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest ml-1">GitHub Connection</label>
               <div className="relative group">
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-600 font-mono text-sm group-focus-within:text-purple-500/50 transition-colors">github.com/</span>
                 <input
                   type="text"
                   required
                   value={githubUsername}
                   onChange={(e) => setGithubUsername(e.target.value)}
-                  placeholder="username"
-                  className="w-full bg-black/50 border border-neutral-800 rounded-2xl py-5 pl-[105px] pr-5 text-white font-mono tracking-tight focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-lg"
+                  placeholder="e.g. github_username"
+                  className="w-full bg-black/50 border border-neutral-800 rounded-2xl py-5 px-6 text-white font-mono tracking-tight focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-lg group-hover:border-neutral-700"
                 />
               </div>
               <p className="text-[11px] text-neutral-600 px-1 leading-relaxed">

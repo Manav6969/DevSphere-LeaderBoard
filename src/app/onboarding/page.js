@@ -124,13 +124,12 @@ export default function OnboardingPage() {
                 <Github className="w-4 h-4 text-neutral-500" />
                 GitHub Username
               </label>
-              <div className="relative">
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-600 text-lg font-mono tracking-tighter">github.com/</span>
+              <div className="relative group">
                 <input
                   type="text"
-                  placeholder="username"
+                  placeholder="e.g. github_username"
                   required
-                  className="w-full bg-black/50 border border-neutral-700 rounded-xl py-4 pl-[110px] pr-5 text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-lg font-mono tracking-tight"
+                  className="w-full bg-black/50 border border-neutral-700 rounded-xl py-4 px-6 text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-lg font-mono tracking-tight group-hover:border-neutral-600"
                   value={githubUsername}
                   onChange={(e) => setGithubUsername(e.target.value)}
                 />
