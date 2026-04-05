@@ -82,15 +82,18 @@ export default function Leaderboard({ data, currentProfileId, highlightUsername 
                   <div className="flex items-center justify-center w-12 h-12">
                     {absoluteIndex < 3 ? (
                       <div className="relative flex items-center justify-center group/medal">
-                        <Medal className={cn(
-                          "w-11 h-11 transition-transform group-hover/medal:scale-110 duration-500",
-                          absoluteIndex === 0 ? "text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.4)]" : 
-                          absoluteIndex === 1 ? "text-slate-300 drop-shadow-[0_0_12px_rgba(203,213,225,0.4)]" : 
-                          "text-amber-600 drop-shadow-[0_0_12px_rgba(180,83,9,0.4)]"
-                        )} />
-                        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-black/80 mt-1 pointer-events-none">
+                        {/* Custom Aura Badge */}
+                        <div className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center font-black text-sm relative transition-all duration-500 group-hover/medal:scale-110",
+                          absoluteIndex === 0 ? "bg-gradient-to-br from-yellow-300 via-yellow-500 to-amber-600 text-black shadow-[0_0_20px_rgba(234,179,8,0.4)]" : 
+                          absoluteIndex === 1 ? "bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 text-black shadow-[0_0_20px_rgba(148,163,184,0.3)]" : 
+                          "bg-gradient-to-br from-amber-400 via-amber-600 to-amber-800 text-black shadow-[0_0_20px_rgba(180,83,9,0.3)]"
+                        )}>
                           {absoluteIndex + 1}
-                        </span>
+                          
+                          {/* Inner Shine Effect */}
+                          <div className="absolute inset-0.5 rounded-full border border-white/30 pointer-events-none" />
+                        </div>
                       </div>
                     ) : (
                       <span className="text-xl font-black text-white/20 italic tracking-tighter group-hover:text-white/40 transition-colors">
