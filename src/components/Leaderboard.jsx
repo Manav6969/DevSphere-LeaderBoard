@@ -81,17 +81,19 @@ export default function Leaderboard({ data, currentProfileId, highlightUsername 
                 <div className="flex items-center gap-4 md:gap-8 relative z-10">
                   <div className="flex items-center justify-center w-12 h-12">
                     {absoluteIndex < 3 ? (
-                      <div className="relative">
+                      <div className="relative flex items-center justify-center group/medal">
                         <Medal className={cn(
-                          "w-10 h-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]",
-                          absoluteIndex === 0 ? "text-yellow-400" : absoluteIndex === 1 ? "text-gray-300" : "text-amber-600"
+                          "w-11 h-11 transition-transform group-hover/medal:scale-110 duration-500",
+                          absoluteIndex === 0 ? "text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.4)]" : 
+                          absoluteIndex === 1 ? "text-slate-300 drop-shadow-[0_0_12px_rgba(203,213,225,0.4)]" : 
+                          "text-amber-600 drop-shadow-[0_0_12px_rgba(180,83,9,0.4)]"
                         )} />
-                        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-black/60 mt-1">
+                        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-black/80 mt-1 pointer-events-none">
                           {absoluteIndex + 1}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-xl font-black text-white/20 italic tracking-tighter">
+                      <span className="text-xl font-black text-white/20 italic tracking-tighter group-hover:text-white/40 transition-colors">
                         {String(absoluteIndex + 1).padStart(2, '0')}
                       </span>
                     )}
