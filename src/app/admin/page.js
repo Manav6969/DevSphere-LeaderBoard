@@ -12,7 +12,7 @@ import SubmissionsList from '@/components/SubmissionsList'
 
 function TaskManagement({ tasks, onUpdate }) {
   const [editingId, setEditingId] = useState(null)
-  const [newForm, setNewForm] = useState({ github_identifier: '', title: '', difficulty: 'medium', points: 0 })
+  const [newForm, setNewForm] = useState({ github_identifier: '', title: '', difficulty: 'medium', points: 0, task_url: '' })
   const [editForm, setEditForm] = useState({})
 
   const handleCreate = async (e) => {
@@ -20,7 +20,7 @@ function TaskManagement({ tasks, onUpdate }) {
     const { error } = await supabase.from('tasks').insert(newForm)
     if (error) alert(error.message)
     else {
-      setNewForm({ github_identifier: '', title: '', difficulty: 'medium', points: 0 })
+      setNewForm({ github_identifier: '', title: '', difficulty: 'medium', points: 0, task_url: '' })
       onUpdate()
     }
   }
@@ -98,6 +98,13 @@ function TaskManagement({ tasks, onUpdate }) {
               onChange={(e) => setNewForm({ ...newForm, points: parseInt(e.target.value) })}
             />
           </div>
+          <input
+            type="url"
+            placeholder="Task URL (e.g. https://github.com/org/repo)"
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none md:col-span-3"
+            value={newForm.task_url}
+            onChange={(e) => setNewForm({ ...newForm, task_url: e.target.value })}
+          />
           <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl px-6 py-2.5 transition-all text-sm shadow-lg shadow-purple-900/20 active:scale-95">
             Add Task
           </button>
@@ -148,6 +155,13 @@ function TaskManagement({ tasks, onUpdate }) {
                     onChange={(e) => setEditForm({ ...editForm, points: parseInt(e.target.value) })}
                   />
                 </div>
+                <input
+                  type="url"
+                  placeholder="Task URL"
+                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                  value={editForm.task_url || ''}
+                  onChange={(e) => setEditForm({ ...editForm, task_url: e.target.value })}
+                />
                 <div className="flex gap-2">
                   <button onClick={() => handleUpdate(task.id)} className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg transition-colors"><Save className="w-5 h-5" /></button>
                   <button onClick={() => setEditingId(null)} className="p-2 text-gray-400 hover:bg-white/10 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
@@ -169,6 +183,9 @@ function TaskManagement({ tasks, onUpdate }) {
                     )}>
                       {task.difficulty}
                     </span>
+                    {task.task_url && (
+                      <a href={task.task_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-purple-400 hover:text-purple-300 underline">repo ↗</a>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-8">

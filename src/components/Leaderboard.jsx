@@ -294,9 +294,21 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                       const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.web
                       return (
                         <th key={task.id} className="px-2 py-2.5 text-center border-l border-white/[0.04] min-w-[80px]">
-                          <div className={cn("text-[11px] font-black uppercase", colors.text)}>
-                            {DIFFICULTY_LABELS[task.difficulty] || task.difficulty?.charAt(0)?.toUpperCase()}
-                          </div>
+                          {task.task_url ? (
+                            <a
+                              href={task.task_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={cn("text-[11px] font-black uppercase hover:underline hover:brightness-125 transition-all cursor-pointer", colors.text)}
+                              title={`Open ${task.title} ${task.difficulty} task`}
+                            >
+                              {DIFFICULTY_LABELS[task.difficulty] || task.difficulty?.charAt(0)?.toUpperCase()}
+                            </a>
+                          ) : (
+                            <div className={cn("text-[11px] font-black uppercase", colors.text)}>
+                              {DIFFICULTY_LABELS[task.difficulty] || task.difficulty?.charAt(0)?.toUpperCase()}
+                            </div>
+                          )}
                           <div className="text-[9px] text-gray-600 font-mono mt-0.5">{task.points}</div>
                         </th>
                       )
