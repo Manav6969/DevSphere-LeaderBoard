@@ -31,15 +31,6 @@ function formatTimeFull(seconds) {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
-// Show the actual clock time of completion (always available)
-function formatClockTime(isoString) {
-  if (!isoString) return ''
-  const d = new Date(isoString)
-  const h = d.getHours().toString().padStart(2, '0')
-  const m = d.getMinutes().toString().padStart(2, '0')
-  return `${h}:${m}`
-}
-
 // ─── Rank Badge ───
 function RankBadge({ rank }) {
   if (rank > 3) {
@@ -131,23 +122,33 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
 
   const allTasks = useMemo(() => categoryStructure.flatMap(c => c.tasks), [categoryStructure])
 
-  // Fallback: find the earliest completion time to use as baseline if eventStartTime is missing
-  const fallbackStartTime = useMemo(() => {
-    if (eventStartTime) return eventStartTime
-    if (!completions || completions.length === 0) return null
-    let earliest = Infinity
-    completions.forEach(c => {
-      const t = new Date(c.created_at).getTime()
-      if (t < earliest) earliest = t
-    })
-    return earliest < Infinity ? new Date(earliest) : null
-  }, [eventStartTime, completions])
-
+  // Calculate solve time for a single completion using commit_time from payload
   const getSolveTime = (completion) => {
     if (!completion) return 0
-    const baseTime = fallbackStartTime
-    if (!baseTime) return 0
-    return Math.max(0, Math.floor((new Date(completion.created_at) - baseTime) / 1000))
+
+    // 1. Try commit_time from the webhook payload (the actual time the user committed)
+    const payload = completion.payload
+    if (payload && payload.commit_time && eventStartTime) {
+      const commitTime = new Date(payload.commit_time)
+      return Math.max(0, Math.floor((commitTime - eventStartTime) / 1000))
+    }
+
+    // 2. Fallback: use created_at relative to eventStartTime
+    if (eventStartTime) {
+      return Math.max(0, Math.floor((new Date(completion.created_at) - eventStartTime) / 1000))
+    }
+
+    return 0
+  }
+
+  // Get commit_time formatted as clock time (for display when relative time can't be computed)
+  const getCommitClockTime = (completion) => {
+    if (!completion) return ''
+    const payload = completion.payload
+    const timeStr = payload?.commit_time || completion.created_at
+    if (!timeStr) return ''
+    const d = new Date(timeStr)
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
   }
 
   // ─── Ranked data ───
@@ -435,10 +436,10 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                         {/* Penalty Time */}
                         <td className="px-4 py-3.5 text-center border-l border-white/[0.04]">
                           <span className="text-[11px] font-mono text-gray-500 tabular-nums tracking-tight">
-                            {entry.total_time && entry.total_time > 0
-                              ? formatTimeFull(Math.floor(entry.total_time))
-                              : entry.totalPenaltySeconds > 0
-                                ? formatTimeFull(entry.totalPenaltySeconds)
+                            {entry.totalPenaltySeconds > 0
+                              ? formatTimeFull(entry.totalPenaltySeconds)
+                              : entry.total_time && entry.total_time > 0
+                                ? formatTimeFull(Math.floor(entry.total_time))
                                 : '--:--:--'}
                           </span>
                         </td>
@@ -450,10 +451,10 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                             const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.web
                             const isSolved = !!completion
                             const solveTimeSecs = isSolved ? getSolveTime(completion) : 0
-                            // Always show either relative time OR clock time
+                            // Show relative time (from event start) OR commit clock time
                             const displayTime = solveTimeSecs > 0
                               ? formatTimeShort(solveTimeSecs)
-                              : (isSolved ? formatClockTime(completion.created_at) : '')
+                              : (isSolved ? getCommitClockTime(completion) : '')
 
                             return (
                               <td

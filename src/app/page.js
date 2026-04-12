@@ -43,7 +43,7 @@ export default function RootPage() {
             supabase.from('leaderboard').select('id, github_username, total_points, total_time, tasks_completed').order('total_points', { ascending: false }).order('total_time', { ascending: true }),
             supabase.from('task_completions').select('id, status, created_at, profile_id, profiles(email, github_username), tasks(title, difficulty, points)').order('created_at', { ascending: false }).limit(100),
             supabase.from('tasks').select('id, title, difficulty, points, github_identifier').order('title').order('difficulty'),
-            supabase.from('task_completions').select('id, profile_id, task_id, status, created_at').eq('status', 'valid'),
+            supabase.from('task_completions').select('id, profile_id, task_id, status, created_at, payload').eq('status', 'valid'),
             supabase.from('settings').select('value').eq('key', 'event_start_time').maybeSingle()
           ])
           setLeaderboard(lbRes.data || [])
