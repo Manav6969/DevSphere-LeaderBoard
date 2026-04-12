@@ -7,9 +7,9 @@ import { Crown, Award, Medal, Zap, Users, Target } from 'lucide-react'
 
 // ─── Color System ───
 const CATEGORY_COLORS = {
-  web:  { text: 'text-sky-400', header: 'bg-sky-500/12', solved: 'bg-sky-500/8', dot: 'bg-sky-400', accent: '#38bdf8', ring: 'ring-sky-500/30' },
-  app:  { text: 'text-emerald-400', header: 'bg-emerald-500/12', solved: 'bg-emerald-500/8', dot: 'bg-emerald-400', accent: '#34d399', ring: 'ring-emerald-500/30' },
-  ml:   { text: 'text-violet-400', header: 'bg-violet-500/12', solved: 'bg-violet-500/8', dot: 'bg-violet-400', accent: '#a78bfa', ring: 'ring-violet-500/30' },
+  web: { text: 'text-sky-400', header: 'bg-sky-500/12', solved: 'bg-sky-500/8', dot: 'bg-sky-400', accent: '#38bdf8', ring: 'ring-sky-500/30' },
+  app: { text: 'text-emerald-400', header: 'bg-emerald-500/12', solved: 'bg-emerald-500/8', dot: 'bg-emerald-400', accent: '#34d399', ring: 'ring-emerald-500/30' },
+  ml: { text: 'text-violet-400', header: 'bg-violet-500/12', solved: 'bg-violet-500/8', dot: 'bg-violet-400', accent: '#a78bfa', ring: 'ring-violet-500/30' },
   foss: { text: 'text-amber-400', header: 'bg-amber-500/12', solved: 'bg-amber-500/8', dot: 'bg-amber-400', accent: '#fbbf24', ring: 'ring-amber-500/30' },
 }
 
@@ -392,8 +392,8 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                                 <span className={cn(
                                   "text-sm font-bold truncate transition-colors duration-200",
                                   isSelf ? "text-purple-200" :
-                                  rank <= 3 ? "text-white" :
-                                  isHovered ? "text-white" : "text-gray-300"
+                                    rank <= 3 ? "text-white" :
+                                      isHovered ? "text-white" : "text-gray-300"
                                 )}>
                                   {entry.github_username}
                                 </span>
@@ -417,8 +417,8 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                                   className={cn(
                                     "h-full rounded-full",
                                     isSelf ? "bg-purple-500" :
-                                    solvedRatio === 1 ? "bg-green-400" :
-                                    solvedRatio >= 0.5 ? "bg-sky-400" : "bg-white/15"
+                                      solvedRatio === 1 ? "bg-green-400" :
+                                        solvedRatio >= 0.5 ? "bg-sky-400" : "bg-white/15"
                                   )}
                                 />
                               </div>
@@ -436,7 +436,7 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                             className={cn(
                               "font-black text-[15px] tabular-nums",
                               rank === 1 ? "text-yellow-400" :
-                              rank <= 3 ? "text-green-400" : "text-white"
+                                rank <= 3 ? "text-green-400" : "text-white"
                             )}
                           >
                             {entry.computedScore || entry.total_points || 0}

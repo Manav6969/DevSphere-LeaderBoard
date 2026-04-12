@@ -28,7 +28,7 @@ export async function POST(req) {
     const finalIdentifier = taskIdInPayload || repoIdentifier
 
     // Additional identifiers for strict 3-field matching
-    const taskTitle      = body.task_title   // e.g. "ml"
+    const taskTitle = body.task_title   // e.g. "ml"
     const taskDifficulty = body.difficulty   // e.g. "hard"
 
     if (!githubUsername || !finalIdentifier) {
@@ -84,17 +84,17 @@ export async function POST(req) {
       .select('value')
       .eq('key', 'event_start_time')
       .single()
-    
+
     const eventStartTime = startTimeSetting ? new Date(startTimeSetting.value) : new Date(Date.now() - 3600000) // Default 1 hour ago
-    
+
     // Get commit time from webhook payload
     const commitTimestamp = body.commit_time
     if (!commitTimestamp) {
       return NextResponse.json({ error: 'Missing commit_time in payload' }, { status: 400 })
     }
-    
+
     const commitTime = new Date(commitTimestamp)
-    
+
     // Calculate time difference (ensure it doesn't go negative if commit was before event start)
     const timeTakenSeconds = Math.max(0, Math.floor((commitTime - eventStartTime) / 1000))
 
@@ -106,7 +106,7 @@ export async function POST(req) {
         time_taken: timeTakenSeconds // This represents T_final - T_start
       })
       .eq('id', profile.id)
-    
+
     if (profileUpdateError) throw profileUpdateError
 
     // 6. Record the Completion
