@@ -38,3 +38,25 @@ body {
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* Shimmer animation for category headers */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Custom scrollbar for scoreboard */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
