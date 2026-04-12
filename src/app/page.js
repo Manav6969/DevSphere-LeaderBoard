@@ -25,6 +25,7 @@ export default function RootPage() {
   const [submissions, setSubmissions] = useState([])
   const [tasks, setTasks] = useState([])
   const [allCompletions, setAllCompletions] = useState([])
+  const [eventStartTime, setEventStartTime] = useState(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -38,16 +39,18 @@ export default function RootPage() {
       const [sessionPromise, _] = await Promise.all([
         supabase.auth.getSession(),
         (async () => {
-          const [lbRes, subRes, tasksRes, allCompRes] = await Promise.all([
+          const [lbRes, subRes, tasksRes, allCompRes, settingsRes] = await Promise.all([
             supabase.from('leaderboard').select('id, github_username, total_points, total_time, tasks_completed').order('total_points', { ascending: false }).order('total_time', { ascending: true }),
             supabase.from('task_completions').select('id, status, created_at, profile_id, profiles(email, github_username), tasks(title, difficulty, points)').order('created_at', { ascending: false }).limit(100),
             supabase.from('tasks').select('id, title, difficulty, points, github_identifier').order('title').order('difficulty'),
-            supabase.from('task_completions').select('id, profile_id, task_id, status, created_at').eq('status', 'valid')
+            supabase.from('task_completions').select('id, profile_id, task_id, status, created_at').eq('status', 'valid'),
+            supabase.from('settings').select('value').eq('key', 'event_start_time').single()
           ])
           setLeaderboard(lbRes.data || [])
           setSubmissions(subRes.data || [])
           setTasks(tasksRes.data || [])
           setAllCompletions(allCompRes.data || [])
+          if (settingsRes.data?.value) setEventStartTime(new Date(settingsRes.data.value))
         })()
       ])
 
@@ -202,7 +205,7 @@ export default function RootPage() {
         <AnimatePresence mode="wait">
           {activeTab === 'leaderboard' ? (
             <motion.div key="leaderboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-              <Leaderboard data={leaderboard} tasks={tasks} completions={allCompletions} currentProfileId={user?.id} highlightUsername={registeredUsername} />
+              <Leaderboard data={leaderboard} tasks={tasks} completions={allCompletions} eventStartTime={eventStartTime} currentProfileId={user?.id} highlightUsername={registeredUsername} />
             </motion.div>
           ) : activeTab === 'submissions' ? (
             <motion.div key="submissions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>

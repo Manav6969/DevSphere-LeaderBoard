@@ -6,24 +6,33 @@ import { cn } from '@/lib/utils'
 
 // Category color mapping
 const CATEGORY_COLORS = {
-  web:  { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', header: 'bg-blue-500/15', glow: 'shadow-blue-500/10' },
-  app:  { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-400', header: 'bg-emerald-500/15', glow: 'shadow-emerald-500/10' },
-  ml:   { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', header: 'bg-purple-500/15', glow: 'shadow-purple-500/10' },
-  foss: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', header: 'bg-orange-500/15', glow: 'shadow-orange-500/10' },
+  web:  { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', header: 'bg-blue-500/15', solved: 'bg-blue-500/8' },
+  app:  { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-400', header: 'bg-emerald-500/15', solved: 'bg-emerald-500/8' },
+  ml:   { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', header: 'bg-purple-500/15', solved: 'bg-purple-500/8' },
+  foss: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', header: 'bg-orange-500/15', solved: 'bg-orange-500/8' },
 }
 
 const DIFFICULTY_LABELS = { easy: 'E', medium: 'M', hard: 'H' }
 const DIFFICULTY_ORDER = ['easy', 'medium', 'hard']
 
-function formatTime(seconds) {
+// Format seconds into HH:MM (Codeforces style)
+function formatTimeShort(seconds) {
   if (!seconds || seconds <= 0) return ''
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+}
+
+// Format seconds into HH:MM:SS
+function formatTimeFull(seconds) {
+  if (!seconds || seconds <= 0) return '--:--:--'
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   const s = seconds % 60
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
-export default function Leaderboard({ data, tasks, completions, currentProfileId, highlightUsername }) {
+export default function Leaderboard({ data, tasks, completions, eventStartTime, currentProfileId, highlightUsername }) {
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 15
 
@@ -31,7 +40,6 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
   const categoryStructure = useMemo(() => {
     if (!tasks || tasks.length === 0) return []
 
-    // Group tasks by title (category)
     const grouped = {}
     tasks.forEach(task => {
       const cat = task.title?.toLowerCase() || 'other'
@@ -41,24 +49,19 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
 
     // Sort tasks within each category by difficulty order
     Object.keys(grouped).forEach(cat => {
-      grouped[cat].sort((a, b) => {
-        return DIFFICULTY_ORDER.indexOf(a.difficulty) - DIFFICULTY_ORDER.indexOf(b.difficulty)
-      })
+      grouped[cat].sort((a, b) =>
+        DIFFICULTY_ORDER.indexOf(a.difficulty) - DIFFICULTY_ORDER.indexOf(b.difficulty)
+      )
     })
 
-    // Return as array of { category, tasks[] }
     const categoryOrder = ['web', 'app', 'ml', 'foss']
     const result = []
     categoryOrder.forEach(cat => {
-      if (grouped[cat]) {
-        result.push({ category: cat, tasks: grouped[cat] })
-      }
+      if (grouped[cat]) result.push({ category: cat, tasks: grouped[cat] })
     })
-    // Add any remaining categories not in the predefined order
+    // Any extra categories
     Object.keys(grouped).forEach(cat => {
-      if (!categoryOrder.includes(cat)) {
-        result.push({ category: cat, tasks: grouped[cat] })
-      }
+      if (!categoryOrder.includes(cat)) result.push({ category: cat, tasks: grouped[cat] })
     })
 
     return result
@@ -71,44 +74,51 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
     completions.forEach(c => {
       if (c.status === 'valid') {
         const key = `${c.profile_id}_${c.task_id}`
-        // Keep only the first valid completion (earliest)
-        if (!map[key]) {
-          map[key] = c
-        }
+        if (!map[key]) map[key] = c
       }
     })
     return map
   }, [completions])
 
-  // All task columns (flat list for counting)
+  // All task columns (flat list)
   const allTasks = useMemo(() => categoryStructure.flatMap(c => c.tasks), [categoryStructure])
 
-  // Build leaderboard rows: compute per-user total + solved count
+  // Calculate per-task solve time in seconds (from event start)
+  const getSolveTime = (completion) => {
+    if (!completion || !eventStartTime) return 0
+    const solvedAt = new Date(completion.created_at)
+    return Math.max(0, Math.floor((solvedAt - eventStartTime) / 1000))
+  }
+
+  // Build ranked data with per-user scores, solved counts, and total penalty time
   const rankedData = useMemo(() => {
     return data.map(entry => {
       let totalScore = 0
       let solvedCount = 0
-      let lastSolveTime = 0
+      let totalPenaltySeconds = 0
 
       allTasks.forEach(task => {
         const completion = completionMap[`${entry.id}_${task.id}`]
         if (completion) {
           totalScore += task.points || 0
           solvedCount++
-          // Track latest completion time for tiebreaking
-          const ct = new Date(completion.created_at).getTime()
-          if (ct > lastSolveTime) lastSolveTime = ct
+          totalPenaltySeconds += getSolveTime(completion)
         }
       })
 
-      return { ...entry, computedScore: totalScore, solvedCount, lastSolveTime }
+      return {
+        ...entry,
+        computedScore: totalScore,
+        solvedCount,
+        totalPenaltySeconds
+      }
     }).sort((a, b) => {
+      // Primary: higher score wins
       if (b.computedScore !== a.computedScore) return b.computedScore - a.computedScore
-      // Tiebreak: less time = better
-      if (a.total_time !== b.total_time) return (a.total_time || Infinity) - (b.total_time || Infinity)
-      return a.lastSolveTime - b.lastSolveTime
+      // Tiebreak: lower total penalty time wins
+      return a.totalPenaltySeconds - b.totalPenaltySeconds
     })
-  }, [data, allTasks, completionMap])
+  }, [data, allTasks, completionMap, eventStartTime])
 
   const totalPages = Math.ceil(rankedData.length / ITEMS_PER_PAGE)
   const paginatedData = rankedData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
@@ -127,15 +137,21 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
         className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl"
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            {/* Header — Category Groups */}
+          <table className="w-full text-left border-collapse min-w-[900px]">
+            {/* ───── HEADER ───── */}
             <thead>
-              {/* Top row: Category names spanning their sub-columns */}
+              {/* Top row: Category names spanning sub-columns */}
               <tr className="border-b border-white/10">
-                <th className="px-3 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 sticky left-0 z-20 w-10" rowSpan={2}>#</th>
-                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 sticky left-10 z-20 min-w-[140px]" rowSpan={2}>Who</th>
-                <th className="px-3 py-3 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 w-16" rowSpan={2}>=</th>
-                <th className="px-3 py-3 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 w-16" rowSpan={2}>★</th>
+                <th className="px-3 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 sticky left-0 z-20 w-10 text-center" rowSpan={2}>#</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 sticky left-[40px] z-20 min-w-[140px]" rowSpan={2}>Who</th>
+                <th className="px-3 py-3 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 w-20 border-l border-white/5" rowSpan={2}>
+                  <div>=</div>
+                  <div className="text-[8px] text-gray-600 font-normal mt-0.5">Score</div>
+                </th>
+                <th className="px-3 py-3 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 w-20 border-l border-white/5" rowSpan={2}>
+                  <div>⏱</div>
+                  <div className="text-[8px] text-gray-600 font-normal mt-0.5">Penalty</div>
+                </th>
                 {categoryStructure.map(({ category, tasks: catTasks }) => {
                   const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.web
                   return (
@@ -161,7 +177,7 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
                       <th
                         key={task.id}
                         className={cn(
-                          "px-2 py-2 text-center border-l border-white/5 min-w-[70px]",
+                          "px-2 py-2 text-center border-l border-white/5 min-w-[75px]",
                           i === 0 && colors.border
                         )}
                       >
@@ -169,7 +185,7 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
                           {DIFFICULTY_LABELS[task.difficulty] || task.difficulty?.charAt(0)?.toUpperCase()}
                         </div>
                         <div className="text-[9px] text-gray-600 font-mono mt-0.5">
-                          {task.points}
+                          {task.points} pts
                         </div>
                       </th>
                     )
@@ -178,7 +194,7 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
               </tr>
             </thead>
 
-            {/* Body — Each row is a participant */}
+            {/* ───── BODY ───── */}
             <tbody className="divide-y divide-white/5">
               {paginatedData.map((entry, index) => {
                 const rank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1
@@ -198,7 +214,7 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
                     {/* Rank */}
                     <td className={cn(
                       "px-3 py-3 text-center font-black text-sm sticky left-0 z-10",
-                      isSelf ? "bg-purple-500/10" : "bg-black/80",
+                      isSelf ? "bg-purple-900/40" : "bg-black/90",
                       rank === 1 ? "text-yellow-400" :
                       rank === 2 ? "text-slate-300" :
                       rank === 3 ? "text-amber-500" :
@@ -209,8 +225,8 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
 
                     {/* Username */}
                     <td className={cn(
-                      "px-4 py-3 sticky left-10 z-10",
-                      isSelf ? "bg-purple-500/10" : "bg-black/80"
+                      "px-4 py-3 sticky left-[40px] z-10",
+                      isSelf ? "bg-purple-900/40" : "bg-black/90"
                     )}>
                       <div className="flex items-center gap-2">
                         <span className={cn(
@@ -227,52 +243,53 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
                     </td>
 
                     {/* Total Score */}
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-3 py-3 text-center border-l border-white/5">
                       <span className={cn(
-                        "font-black text-sm tabular-nums",
+                        "font-black text-base tabular-nums",
                         rank <= 3 ? "text-green-400" : "text-white"
                       )}>
                         {entry.computedScore || entry.total_points || 0}
                       </span>
                     </td>
 
-                    {/* Solved Count */}
-                    <td className="px-3 py-3 text-center">
-                      <span className="text-sm font-mono text-gray-500">
-                        {entry.solvedCount || entry.tasks_completed || 0}
+                    {/* Total Penalty Time */}
+                    <td className="px-3 py-3 text-center border-l border-white/5">
+                      <span className="text-xs font-mono text-gray-400">
+                        {entry.totalPenaltySeconds > 0
+                          ? formatTimeFull(entry.totalPenaltySeconds)
+                          : entry.total_time
+                            ? formatTimeFull(entry.total_time)
+                            : '--:--:--'}
                       </span>
                     </td>
 
-                    {/* Per-Task Cells */}
+                    {/* ───── Per-Task Cells ───── */}
                     {categoryStructure.flatMap(({ category, tasks: catTasks }) =>
                       catTasks.map((task, i) => {
                         const completion = completionMap[`${entry.id}_${task.id}`]
                         const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.web
                         const isSolved = !!completion
-
-                        // Calculate time from event start if available
-                        let timeDisplay = ''
-                        if (isSolved && entry.total_time) {
-                          timeDisplay = formatTime(Math.floor(entry.total_time))
-                        }
+                        const solveTimeSecs = isSolved ? getSolveTime(completion) : 0
 
                         return (
                           <td
                             key={task.id}
                             className={cn(
-                              "px-2 py-2.5 text-center border-l border-white/5 transition-colors",
+                              "px-2 py-2 text-center border-l border-white/5 transition-colors",
                               i === 0 && colors.border,
-                              isSolved && "bg-white/[0.03]"
+                              isSolved && colors.solved
                             )}
                           >
                             {isSolved ? (
                               <div>
-                                <div className={cn("text-sm font-bold tabular-nums", colors.text)}>
+                                {/* Points earned */}
+                                <div className={cn("text-sm font-bold tabular-nums leading-tight", colors.text)}>
                                   {task.points}
                                 </div>
-                                {timeDisplay && (
-                                  <div className="text-[9px] text-gray-600 font-mono mt-0.5">
-                                    {timeDisplay}
+                                {/* Solve time from event start (Codeforces-style HH:MM) */}
+                                {solveTimeSecs > 0 && (
+                                  <div className="text-[10px] text-gray-500 font-mono leading-tight mt-0.5">
+                                    {formatTimeShort(solveTimeSecs)}
                                   </div>
                                 )}
                               </div>
@@ -286,6 +303,15 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
                   </tr>
                 )
               })}
+
+              {/* Empty state */}
+              {paginatedData.length === 0 && (
+                <tr>
+                  <td colSpan={4 + allTasks.length} className="text-center py-16 text-gray-600 text-sm">
+                    No participants yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -360,6 +386,12 @@ export default function Leaderboard({ data, tasks, completions, currentProfileId
               <div className="hidden md:block text-right">
                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Solved</p>
                 <p className="font-mono font-bold text-white text-xl">{userEntry.solvedCount || userEntry.tasks_completed || 0}/{allTasks.length}</p>
+              </div>
+              <div className="hidden md:block text-right">
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Time</p>
+                <p className="font-mono font-bold text-gray-300 text-lg">
+                  {formatTimeFull(userEntry.totalPenaltySeconds || userEntry.total_time || 0)}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-purple-400 font-bold uppercase tracking-[0.2em] mb-0.5">Total</p>
