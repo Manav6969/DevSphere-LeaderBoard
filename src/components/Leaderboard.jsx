@@ -164,16 +164,17 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
   // ─── Ranked data ───
   const rankedData = useMemo(() => {
     return data.map(entry => {
-      let totalScore = 0, solvedCount = 0, totalPenaltySeconds = 0
+      let totalScore = 0, solvedCount = 0, lastSolveTime = 0
       allTasks.forEach(task => {
         const c = completionMap[`${entry.id}_${task.id}`]
         if (c) {
           totalScore += task.points || 0
           solvedCount++
-          totalPenaltySeconds += getSolveTime(c)
+          const t = getSolveTime(c)
+          if (t > lastSolveTime) lastSolveTime = t
         }
       })
-      return { ...entry, computedScore: totalScore, solvedCount, totalPenaltySeconds }
+      return { ...entry, computedScore: totalScore, solvedCount, totalPenaltySeconds: lastSolveTime }
     }).sort((a, b) => {
       if (b.computedScore !== a.computedScore) return b.computedScore - a.computedScore
       return a.totalPenaltySeconds - b.totalPenaltySeconds
