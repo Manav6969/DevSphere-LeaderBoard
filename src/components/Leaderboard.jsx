@@ -31,6 +31,15 @@ function formatTimeFull(seconds) {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
+// Show the actual clock time of completion (always available)
+function formatClockTime(isoString) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  const h = d.getHours().toString().padStart(2, '0')
+  const m = d.getMinutes().toString().padStart(2, '0')
+  return `${h}:${m}`
+}
+
 // ─── Rank Badge ───
 function RankBadge({ rank }) {
   if (rank > 3) {
@@ -426,9 +435,11 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                         {/* Penalty Time */}
                         <td className="px-4 py-3.5 text-center border-l border-white/[0.04]">
                           <span className="text-[11px] font-mono text-gray-500 tabular-nums tracking-tight">
-                            {entry.totalPenaltySeconds > 0
-                              ? formatTimeFull(entry.totalPenaltySeconds)
-                              : entry.total_time ? formatTimeFull(entry.total_time) : '--:--:--'}
+                            {entry.total_time && entry.total_time > 0
+                              ? formatTimeFull(Math.floor(entry.total_time))
+                              : entry.totalPenaltySeconds > 0
+                                ? formatTimeFull(entry.totalPenaltySeconds)
+                                : '--:--:--'}
                           </span>
                         </td>
 
@@ -439,6 +450,10 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                             const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.web
                             const isSolved = !!completion
                             const solveTimeSecs = isSolved ? getSolveTime(completion) : 0
+                            // Always show either relative time OR clock time
+                            const displayTime = solveTimeSecs > 0
+                              ? formatTimeShort(solveTimeSecs)
+                              : (isSolved ? formatClockTime(completion.created_at) : '')
 
                             return (
                               <td
@@ -458,9 +473,9 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                                     <div className={cn("text-sm font-bold tabular-nums leading-tight", colors.text)}>
                                       {task.points}
                                     </div>
-                                    {solveTimeSecs > 0 && (
+                                    {displayTime && (
                                       <div className="text-[10px] text-gray-500 font-mono leading-tight mt-0.5 tabular-nums">
-                                        {formatTimeShort(solveTimeSecs)}
+                                        {displayTime}
                                       </div>
                                     )}
                                     {/* Solved dot */}
