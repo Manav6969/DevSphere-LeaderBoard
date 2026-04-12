@@ -8,8 +8,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import dynamic from 'next/dynamic'
 
-const Leaderboard = dynamic(() => import('@/components/Leaderboard'), { 
-  loading: () => <div className="h-96 flex items-center justify-center bg-white/5 rounded-2xl animate-pulse text-gray-500">Loading Leaderboard...</div> 
+const Leaderboard = dynamic(() => import('@/components/Leaderboard'), {
+  loading: () => <div className="h-96 flex items-center justify-center bg-white/5 rounded-2xl animate-pulse text-gray-500">Loading Leaderboard...</div>
 })
 const SubmissionsList = dynamic(() => import('@/components/SubmissionsList'), {
   loading: () => <div className="h-96 flex items-center justify-center bg-white/5 rounded-2xl animate-pulse text-gray-500">Loading Submissions...</div>
@@ -61,7 +61,7 @@ export default function RootPage() {
 
       const user = sessionPromise.data.session?.user
       setUser(user)
-      
+
       const storedUsername = localStorage.getItem('devsphere_github_username')
       setRegisteredUsername(storedUsername)
 

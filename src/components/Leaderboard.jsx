@@ -122,18 +122,28 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
 
   const allTasks = useMemo(() => categoryStructure.flatMap(c => c.tasks), [categoryStructure])
 
-  // Calculate solve time for a single completion using commit_time from payload
+  // Safely parse payload (could be JSON string or object)
+  const getPayload = (completion) => {
+    if (!completion?.payload) return null
+    if (typeof completion.payload === 'string') {
+      try { return JSON.parse(completion.payload) } catch { return null }
+    }
+    return completion.payload
+  }
+
+  // Calculate solve time using commit_time from payload
   const getSolveTime = (completion) => {
     if (!completion) return 0
+    const payload = getPayload(completion)
+    const commitTimeStr = payload?.commit_time
 
-    // 1. Try commit_time from the webhook payload (the actual time the user committed)
-    const payload = completion.payload
-    if (payload && payload.commit_time && eventStartTime) {
-      const commitTime = new Date(payload.commit_time)
-      return Math.max(0, Math.floor((commitTime - eventStartTime) / 1000))
+    if (commitTimeStr && eventStartTime) {
+      const commitTime = new Date(commitTimeStr)
+      const secs = Math.max(0, Math.floor((commitTime - eventStartTime) / 1000))
+      return secs
     }
 
-    // 2. Fallback: use created_at relative to eventStartTime
+    // Fallback: created_at relative to eventStartTime 
     if (eventStartTime) {
       return Math.max(0, Math.floor((new Date(completion.created_at) - eventStartTime) / 1000))
     }
@@ -141,10 +151,10 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
     return 0
   }
 
-  // Get commit_time formatted as clock time (for display when relative time can't be computed)
+  // Get commit_time as HH:MM for display (always works)
   const getCommitClockTime = (completion) => {
     if (!completion) return ''
-    const payload = completion.payload
+    const payload = getPayload(completion)
     const timeStr = payload?.commit_time || completion.created_at
     if (!timeStr) return ''
     const d = new Date(timeStr)
