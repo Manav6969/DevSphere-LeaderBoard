@@ -122,9 +122,23 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
 
   const allTasks = useMemo(() => categoryStructure.flatMap(c => c.tasks), [categoryStructure])
 
+  // Fallback: find the earliest completion time to use as baseline if eventStartTime is missing
+  const fallbackStartTime = useMemo(() => {
+    if (eventStartTime) return eventStartTime
+    if (!completions || completions.length === 0) return null
+    let earliest = Infinity
+    completions.forEach(c => {
+      const t = new Date(c.created_at).getTime()
+      if (t < earliest) earliest = t
+    })
+    return earliest < Infinity ? new Date(earliest) : null
+  }, [eventStartTime, completions])
+
   const getSolveTime = (completion) => {
-    if (!completion || !eventStartTime) return 0
-    return Math.max(0, Math.floor((new Date(completion.created_at) - eventStartTime) / 1000))
+    if (!completion) return 0
+    const baseTime = fallbackStartTime
+    if (!baseTime) return 0
+    return Math.max(0, Math.floor((new Date(completion.created_at) - baseTime) / 1000))
   }
 
   // ─── Ranked data ───

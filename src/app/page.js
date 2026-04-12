@@ -44,13 +44,18 @@ export default function RootPage() {
             supabase.from('task_completions').select('id, status, created_at, profile_id, profiles(email, github_username), tasks(title, difficulty, points)').order('created_at', { ascending: false }).limit(100),
             supabase.from('tasks').select('id, title, difficulty, points, github_identifier').order('title').order('difficulty'),
             supabase.from('task_completions').select('id, profile_id, task_id, status, created_at').eq('status', 'valid'),
-            supabase.from('settings').select('value').eq('key', 'event_start_time').single()
+            supabase.from('settings').select('value').eq('key', 'event_start_time').maybeSingle()
           ])
           setLeaderboard(lbRes.data || [])
           setSubmissions(subRes.data || [])
           setTasks(tasksRes.data || [])
           setAllCompletions(allCompRes.data || [])
-          if (settingsRes.data?.value) setEventStartTime(new Date(settingsRes.data.value))
+          if (settingsRes.error) console.warn('Settings fetch warning:', settingsRes.error.message)
+          if (settingsRes.data?.value) {
+            setEventStartTime(new Date(settingsRes.data.value))
+          } else {
+            console.warn('Event start time not found in settings, using fallback')
+          }
         })()
       ])
 
