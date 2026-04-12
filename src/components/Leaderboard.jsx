@@ -1,172 +1,316 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
-import { Medal } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
-export default function Leaderboard({ data, currentProfileId, highlightUsername }) {
+// Category color mapping
+const CATEGORY_COLORS = {
+  web:  { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', header: 'bg-blue-500/15', glow: 'shadow-blue-500/10' },
+  app:  { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-400', header: 'bg-emerald-500/15', glow: 'shadow-emerald-500/10' },
+  ml:   { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', header: 'bg-purple-500/15', glow: 'shadow-purple-500/10' },
+  foss: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', header: 'bg-orange-500/15', glow: 'shadow-orange-500/10' },
+}
+
+const DIFFICULTY_LABELS = { easy: 'E', medium: 'M', hard: 'H' }
+const DIFFICULTY_ORDER = ['easy', 'medium', 'hard']
+
+function formatTime(seconds) {
+  if (!seconds || seconds <= 0) return ''
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+export default function Leaderboard({ data, tasks, completions, currentProfileId, highlightUsername }) {
   const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 10
+  const ITEMS_PER_PAGE = 15
 
-  const totalPages = useMemo(() => Math.ceil(data.length / ITEMS_PER_PAGE), [data.length])
-  
-  const paginatedData = useMemo(() => 
-    data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
-    [data, currentPage]
+  // Build the category → tasks structure
+  const categoryStructure = useMemo(() => {
+    if (!tasks || tasks.length === 0) return []
+
+    // Group tasks by title (category)
+    const grouped = {}
+    tasks.forEach(task => {
+      const cat = task.title?.toLowerCase() || 'other'
+      if (!grouped[cat]) grouped[cat] = []
+      grouped[cat].push(task)
+    })
+
+    // Sort tasks within each category by difficulty order
+    Object.keys(grouped).forEach(cat => {
+      grouped[cat].sort((a, b) => {
+        return DIFFICULTY_ORDER.indexOf(a.difficulty) - DIFFICULTY_ORDER.indexOf(b.difficulty)
+      })
+    })
+
+    // Return as array of { category, tasks[] }
+    const categoryOrder = ['web', 'app', 'ml', 'foss']
+    const result = []
+    categoryOrder.forEach(cat => {
+      if (grouped[cat]) {
+        result.push({ category: cat, tasks: grouped[cat] })
+      }
+    })
+    // Add any remaining categories not in the predefined order
+    Object.keys(grouped).forEach(cat => {
+      if (!categoryOrder.includes(cat)) {
+        result.push({ category: cat, tasks: grouped[cat] })
+      }
+    })
+
+    return result
+  }, [tasks])
+
+  // Build a lookup: { `${profileId}_${taskId}` → completion }
+  const completionMap = useMemo(() => {
+    if (!completions) return {}
+    const map = {}
+    completions.forEach(c => {
+      if (c.status === 'valid') {
+        const key = `${c.profile_id}_${c.task_id}`
+        // Keep only the first valid completion (earliest)
+        if (!map[key]) {
+          map[key] = c
+        }
+      }
+    })
+    return map
+  }, [completions])
+
+  // All task columns (flat list for counting)
+  const allTasks = useMemo(() => categoryStructure.flatMap(c => c.tasks), [categoryStructure])
+
+  // Build leaderboard rows: compute per-user total + solved count
+  const rankedData = useMemo(() => {
+    return data.map(entry => {
+      let totalScore = 0
+      let solvedCount = 0
+      let lastSolveTime = 0
+
+      allTasks.forEach(task => {
+        const completion = completionMap[`${entry.id}_${task.id}`]
+        if (completion) {
+          totalScore += task.points || 0
+          solvedCount++
+          // Track latest completion time for tiebreaking
+          const ct = new Date(completion.created_at).getTime()
+          if (ct > lastSolveTime) lastSolveTime = ct
+        }
+      })
+
+      return { ...entry, computedScore: totalScore, solvedCount, lastSolveTime }
+    }).sort((a, b) => {
+      if (b.computedScore !== a.computedScore) return b.computedScore - a.computedScore
+      // Tiebreak: less time = better
+      if (a.total_time !== b.total_time) return (a.total_time || Infinity) - (b.total_time || Infinity)
+      return a.lastSolveTime - b.lastSolveTime
+    })
+  }, [data, allTasks, completionMap])
+
+  const totalPages = Math.ceil(rankedData.length / ITEMS_PER_PAGE)
+  const paginatedData = rankedData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+  const absoluteUserIndex = rankedData.findIndex(entry =>
+    currentProfileId === entry.id || (highlightUsername && highlightUsername === entry.github_username)
   )
-
-  const absoluteUserIndex = useMemo(() => 
-    data.findIndex(entry => 
-      currentProfileId === entry.id || 
-      (highlightUsername && highlightUsername === entry.github_username)
-    ),
-    [data, currentProfileId, highlightUsername]
-  )
-
-  const userEntry = absoluteUserIndex !== -1 ? data[absoluteUserIndex] : null
+  const userEntry = absoluteUserIndex !== -1 ? rankedData[absoluteUserIndex] : null
 
   return (
-    <LayoutGroup id="leaderboard">
-      {/* Grid container — layout animated so it resizes when items swap */}
-      <motion.div layout className="grid gap-4">
-
-        {/* AnimatePresence tracks cards entering/exiting the page slice */}
-        <AnimatePresence initial={false} mode="popLayout">
-          {paginatedData.map((entry, index) => {
-            const absoluteIndex = (currentPage - 1) * ITEMS_PER_PAGE + index
-            const isSelf = currentProfileId === entry.id || (highlightUsername && highlightUsername === entry.github_username)
-
-            return (
-              <motion.div
-                // STABLE key = Framer Motion tracks this card across re-renders
-                // and animates it from old position to new position (FLIP)
-                key={entry.id}
-
-                // layout="position" = only animate XY position changes, not size
-                layout="position"
-
-                // New cards slide in from below
-                initial={{ opacity: 0, y: 60, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                // Removed cards slide up and out
-                exit={{ opacity: 0, y: -60, scale: 0.9, transition: { duration: 0.25 } }}
-
-                // Swap physics — snappy spring for position changes
-                transition={{
-                  layout: {
-                    type: 'spring',
-                    stiffness: 350,
-                    damping: 30,
-                    mass: 0.8,
-                  },
-                  opacity: { duration: 0.3 },
-                  scale: { type: 'spring', stiffness: 300, damping: 25 },
-                  y: { type: 'spring', stiffness: 300, damping: 25 },
-                }}
-
-                whileHover={{ scale: 1.015, zIndex: 10, transition: { duration: 0.15 } }}
-
-                className={cn(
-                  "group relative p-4 md:p-6 rounded-2xl border transition-colors duration-300 flex items-center justify-between overflow-hidden cursor-default",
-                  isSelf
-                    ? "bg-gradient-to-r from-purple-900/40 to-blue-900/40 border-purple-500/50 shadow-[0_0_30px_rgba(147,51,234,0.2)]"
-                    : "bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/[0.07]"
-                )}
-              >
-                {isSelf && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 animate-pulse" />
-                )}
-
-                <div className="flex items-center gap-4 md:gap-8 relative z-10">
-                  <div className="flex items-center justify-center w-12 h-12">
-                    {absoluteIndex < 3 ? (
-                      <div className="relative flex items-center justify-center group/medal">
-                        {/* Custom Aura Badge */}
-                        <div className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center font-black text-sm relative transition-all duration-500 group-hover/medal:scale-110",
-                          absoluteIndex === 0 ? "bg-gradient-to-br from-yellow-300 via-yellow-500 to-amber-600 text-black shadow-[0_0_20px_rgba(234,179,8,0.4)]" : 
-                          absoluteIndex === 1 ? "bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 text-black shadow-[0_0_20px_rgba(148,163,184,0.3)]" : 
-                          "bg-gradient-to-br from-amber-400 via-amber-600 to-amber-800 text-black shadow-[0_0_20px_rgba(180,83,9,0.3)]"
-                        )}>
-                          {absoluteIndex + 1}
-                          
-                          {/* Inner Shine Effect */}
-                          <div className="absolute inset-0.5 rounded-full border border-white/30 pointer-events-none" />
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-xl font-black text-white/20 italic tracking-tighter group-hover:text-white/40 transition-colors">
-                        {String(absoluteIndex + 1).padStart(2, '0')}
-                      </span>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-3">
-                      {entry.github_username}
-                      {isSelf && (
-                        <span className="text-[10px] font-black bg-white text-black px-2 py-0.5 rounded-full uppercase tracking-widest ring-4 ring-purple-500/20">You</span>
+    <div className="space-y-6">
+      {/* Scoreboard Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl"
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            {/* Header — Category Groups */}
+            <thead>
+              {/* Top row: Category names spanning their sub-columns */}
+              <tr className="border-b border-white/10">
+                <th className="px-3 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 sticky left-0 z-20 w-10" rowSpan={2}>#</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 sticky left-10 z-20 min-w-[140px]" rowSpan={2}>Who</th>
+                <th className="px-3 py-3 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 w-16" rowSpan={2}>=</th>
+                <th className="px-3 py-3 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 w-16" rowSpan={2}>★</th>
+                {categoryStructure.map(({ category, tasks: catTasks }) => {
+                  const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.web
+                  return (
+                    <th
+                      key={category}
+                      colSpan={catTasks.length}
+                      className={cn(
+                        "px-2 py-2.5 text-center text-xs font-black uppercase tracking-wider border-l border-white/5",
+                        colors.text, colors.header
                       )}
-                    </h3>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">
-                        {entry.tasks_completed} Tasks
-                      </span>
-                      <div className="w-1 h-1 rounded-full bg-gray-700" />
-                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                        Rank {absoluteIndex + 1}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                    >
+                      {category}
+                    </th>
+                  )
+                })}
+              </tr>
+              {/* Sub-row: Individual task labels (difficulty + points) */}
+              <tr className="border-b border-white/10 bg-white/[0.03]">
+                {categoryStructure.flatMap(({ category, tasks: catTasks }) =>
+                  catTasks.map((task, i) => {
+                    const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.web
+                    return (
+                      <th
+                        key={task.id}
+                        className={cn(
+                          "px-2 py-2 text-center border-l border-white/5 min-w-[70px]",
+                          i === 0 && colors.border
+                        )}
+                      >
+                        <div className={cn("text-[11px] font-black uppercase", colors.text)}>
+                          {DIFFICULTY_LABELS[task.difficulty] || task.difficulty?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <div className="text-[9px] text-gray-600 font-mono mt-0.5">
+                          {task.points}
+                        </div>
+                      </th>
+                    )
+                  })
+                )}
+              </tr>
+            </thead>
 
-                <div className="flex items-center gap-8 relative z-10">
-                  <div className="text-right">
-                    <div className="mb-1">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-0.5">Time</p>
-                      <p className="text-sm font-mono text-gray-400">
-                        {entry.total_time ? (() => {
-                          const s = Math.floor(entry.total_time)
-                          const h = Math.floor(s / 3600)
-                          const m = Math.floor((s % 3600) / 60)
-                          const sec = s % 60
-                          return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
-                        })() : '--:--:--'}
-                      </p>
-                    </div>
-                    <p className="text-3xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/20">
-                      {entry.total_points.toLocaleString()}
-                    </p>
-                    <p className="text-[10px] text-purple-400/80 uppercase tracking-[0.2em] font-black mt-0.5">Points</p>
-                  </div>
-                </div>
-              </motion.div>
-            )
-          })}
-        </AnimatePresence>
+            {/* Body — Each row is a participant */}
+            <tbody className="divide-y divide-white/5">
+              {paginatedData.map((entry, index) => {
+                const rank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1
+                const isSelf = currentProfileId === entry.id || (highlightUsername && highlightUsername === entry.github_username)
+
+                return (
+                  <tr
+                    key={entry.id}
+                    className={cn(
+                      "group transition-colors duration-200",
+                      isSelf
+                        ? "bg-purple-500/10 hover:bg-purple-500/15"
+                        : "hover:bg-white/[0.04]",
+                      rank <= 3 && !isSelf && "bg-white/[0.02]"
+                    )}
+                  >
+                    {/* Rank */}
+                    <td className={cn(
+                      "px-3 py-3 text-center font-black text-sm sticky left-0 z-10",
+                      isSelf ? "bg-purple-500/10" : "bg-black/80",
+                      rank === 1 ? "text-yellow-400" :
+                      rank === 2 ? "text-slate-300" :
+                      rank === 3 ? "text-amber-500" :
+                      "text-gray-600"
+                    )}>
+                      {rank}
+                    </td>
+
+                    {/* Username */}
+                    <td className={cn(
+                      "px-4 py-3 sticky left-10 z-10",
+                      isSelf ? "bg-purple-500/10" : "bg-black/80"
+                    )}>
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-bold truncate max-w-[120px]",
+                          isSelf ? "text-purple-300" :
+                          rank <= 3 ? "text-white" : "text-gray-300"
+                        )}>
+                          {entry.github_username}
+                        </span>
+                        {isSelf && (
+                          <span className="text-[8px] font-black bg-purple-500 text-white px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">You</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Total Score */}
+                    <td className="px-3 py-3 text-center">
+                      <span className={cn(
+                        "font-black text-sm tabular-nums",
+                        rank <= 3 ? "text-green-400" : "text-white"
+                      )}>
+                        {entry.computedScore || entry.total_points || 0}
+                      </span>
+                    </td>
+
+                    {/* Solved Count */}
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-sm font-mono text-gray-500">
+                        {entry.solvedCount || entry.tasks_completed || 0}
+                      </span>
+                    </td>
+
+                    {/* Per-Task Cells */}
+                    {categoryStructure.flatMap(({ category, tasks: catTasks }) =>
+                      catTasks.map((task, i) => {
+                        const completion = completionMap[`${entry.id}_${task.id}`]
+                        const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.web
+                        const isSolved = !!completion
+
+                        // Calculate time from event start if available
+                        let timeDisplay = ''
+                        if (isSolved && entry.total_time) {
+                          timeDisplay = formatTime(Math.floor(entry.total_time))
+                        }
+
+                        return (
+                          <td
+                            key={task.id}
+                            className={cn(
+                              "px-2 py-2.5 text-center border-l border-white/5 transition-colors",
+                              i === 0 && colors.border,
+                              isSolved && "bg-white/[0.03]"
+                            )}
+                          >
+                            {isSolved ? (
+                              <div>
+                                <div className={cn("text-sm font-bold tabular-nums", colors.text)}>
+                                  {task.points}
+                                </div>
+                                {timeDisplay && (
+                                  <div className="text-[9px] text-gray-600 font-mono mt-0.5">
+                                    {timeDisplay}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-800">—</span>
+                            )}
+                          </td>
+                        )
+                      })
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </motion.div>
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-8">
+        <div className="flex items-center justify-center gap-3">
           <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => prev - 1)}
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
-            Previous
+            ← Prev
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {Array.from({ length: totalPages }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentPage(i + 1)}
                 className={cn(
-                  "w-10 h-10 rounded-lg text-sm font-bold transition-all",
+                  "w-8 h-8 rounded-lg text-xs font-bold transition-all",
                   currentPage === i + 1
                     ? "bg-purple-600 text-white shadow-lg shadow-purple-900/40"
-                    : "bg-white/5 text-gray-400 hover:text-white"
+                    : "bg-white/5 text-gray-500 hover:text-white"
                 )}
               >
                 {i + 1}
@@ -176,9 +320,9 @@ export default function Leaderboard({ data, currentProfileId, highlightUsername 
           <button
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(prev => prev + 1)}
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
-            Next
+            Next →
           </button>
         </div>
       )}
@@ -189,7 +333,7 @@ export default function Leaderboard({ data, currentProfileId, highlightUsername 
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.4 }}
-          className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-black/80 backdrop-blur-2xl border-t border-purple-500/20 flex justify-center shadow-[0_-20px_40px_rgba(147,51,234,0.1)]"
+          className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-black/90 backdrop-blur-2xl border-t border-purple-500/20 flex justify-center shadow-[0_-20px_40px_rgba(147,51,234,0.1)]"
         >
           <div className="max-w-7xl w-full flex items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-6">
@@ -208,31 +352,31 @@ export default function Leaderboard({ data, currentProfileId, highlightUsername 
               <div className="hidden md:block h-10 w-px bg-white/10" />
               <div className="hidden md:block">
                 <h3 className="font-bold text-white text-lg tracking-wide">{userEntry.github_username}</h3>
-                <span className="text-xs bg-white text-black px-2 py-0.5 rounded-full font-black uppercase tracking-widest">You</span>
+                <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest">You</span>
               </div>
             </div>
 
             <div className="flex items-center gap-6 md:gap-10">
               <div className="hidden md:block text-right">
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Tasks Done</p>
-                <p className="font-mono font-bold text-white text-xl">{userEntry.tasks_completed}</p>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Solved</p>
+                <p className="font-mono font-bold text-white text-xl">{userEntry.solvedCount || userEntry.tasks_completed || 0}/{allTasks.length}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-purple-400 font-bold uppercase tracking-[0.2em] mb-0.5">Total Points</p>
+                <p className="text-[10px] text-purple-400 font-bold uppercase tracking-[0.2em] mb-0.5">Total</p>
                 <motion.p
-                  key={userEntry.total_points}
+                  key={userEntry.computedScore || userEntry.total_points}
                   initial={{ scale: 1.3, color: '#a855f7' }}
                   animate={{ scale: 1, color: '#c084fc' }}
                   transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                   className="font-black text-3xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-300 to-blue-400"
                 >
-                  {userEntry.total_points.toLocaleString()}
+                  {(userEntry.computedScore || userEntry.total_points || 0).toLocaleString()}
                 </motion.p>
               </div>
             </div>
           </div>
         </motion.div>
       )}
-    </LayoutGroup>
+    </div>
   )
 }
