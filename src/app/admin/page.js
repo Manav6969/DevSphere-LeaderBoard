@@ -177,13 +177,22 @@ function TaskManagement({ tasks, onUpdate }) {
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-500 group-focus-within:text-purple-400">PTS</span>
                       </div>
                     </div>
-                    <input
-                      type="url"
-                      placeholder="Task Repository URL"
-                      className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
-                      value={editForm.task_url || ''}
-                      onChange={(e) => setEditForm({ ...editForm, task_url: e.target.value })}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Repo Name (e.g. task-1)"
+                        className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                        value={editForm.github_identifier || ''}
+                        onChange={(e) => setEditForm({ ...editForm, github_identifier: e.target.value })}
+                      />
+                      <input
+                        type="url"
+                        placeholder="Task Repository URL"
+                        className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                        value={editForm.task_url || ''}
+                        onChange={(e) => setEditForm({ ...editForm, task_url: e.target.value })}
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <button 
