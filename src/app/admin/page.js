@@ -44,23 +44,30 @@ function TaskManagement({ tasks, onUpdate }) {
   return (
     <div className="space-y-8">
       {/* Create New Task */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Plus className="w-5 h-5 text-green-400" />
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-2xl p-6 relative overflow-hidden group"
+      >
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-green-500/30 to-transparent" />
+        <h2 className="text-lg font-black text-white mb-6 flex items-center gap-2 uppercase tracking-wider">
+          <div className="p-2 bg-green-500/10 rounded-lg">
+            <Plus className="w-5 h-5 text-green-400" />
+          </div>
           Create New Task
         </h2>
         <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <input
             type="text" required
-            placeholder="GitHub ID (e.g. repo name or task-1)"
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none"
+            placeholder="GitHub ID (e.g. repo name)"
+            className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all hover:bg-white/[0.05]"
             value={newForm.github_identifier}
             onChange={(e) => setNewForm({ ...newForm, github_identifier: e.target.value })}
           />
           <select
             required
             className={cn(
-              "bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none w-full focus:ring-2 focus:ring-purple-500",
+              "bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm outline-none w-full focus:ring-2 focus:ring-purple-500 transition-all hover:bg-white/[0.05]",
               newForm.title === 'web' ? "text-blue-400" :
               newForm.title === 'app' ? "text-emerald-400" :
               newForm.title === 'ml' ? "text-purple-400" :
@@ -69,16 +76,16 @@ function TaskManagement({ tasks, onUpdate }) {
             value={newForm.title}
             onChange={(e) => setNewForm({ ...newForm, title: e.target.value })}
           >
-            <option className="bg-neutral-900 text-white" value="" disabled>Select Type</option>
-            <option className="bg-neutral-900 text-blue-400" value="web">Web</option>
-            <option className="bg-neutral-900 text-emerald-400" value="app">App</option>
-            <option className="bg-neutral-900 text-purple-400" value="ml">ML</option>
-            <option className="bg-neutral-900 text-orange-400" value="foss">FOSS</option>
+            <option className="bg-neutral-950 text-white" value="" disabled>Select Type</option>
+            <option className="bg-neutral-950 text-blue-400" value="web">Web Development</option>
+            <option className="bg-neutral-950 text-emerald-400" value="app">App Development</option>
+            <option className="bg-neutral-950 text-purple-400" value="ml">Machine Learning</option>
+            <option className="bg-neutral-950 text-orange-400" value="foss">FOSS</option>
           </select>
           <div className="flex gap-2">
             <select
               className={cn(
-                "bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm flex-1 outline-none focus:ring-2 focus:ring-purple-500",
+                "bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm flex-1 outline-none focus:ring-2 focus:ring-purple-500 transition-all hover:bg-white/[0.05]",
                 newForm.difficulty === 'easy' ? "text-green-400" :
                 newForm.difficulty === 'medium' ? "text-yellow-400" :
                 newForm.difficulty === 'hard' ? "text-red-400" : "text-white"
@@ -86,135 +93,177 @@ function TaskManagement({ tasks, onUpdate }) {
               value={newForm.difficulty}
               onChange={(e) => setNewForm({ ...newForm, difficulty: e.target.value })}
             >
-              <option className="bg-neutral-900 text-green-400" value="easy">Easy</option>
-              <option className="bg-neutral-900 text-yellow-400" value="medium">Medium</option>
-              <option className="bg-neutral-900 text-red-400" value="hard">Hard</option>
+              <option className="bg-neutral-950 text-green-400" value="easy">Easy</option>
+              <option className="bg-neutral-950 text-yellow-400" value="medium">Medium</option>
+              <option className="bg-neutral-950 text-red-400" value="hard">Hard</option>
             </select>
             <input
               type="number" required
               placeholder="Points"
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white w-24 focus:ring-2 focus:ring-purple-500 outline-none"
+              className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white w-24 focus:ring-2 focus:ring-purple-500 outline-none transition-all hover:bg-white/[0.05]"
               value={newForm.points}
               onChange={(e) => setNewForm({ ...newForm, points: parseInt(e.target.value) })}
             />
           </div>
+          <button type="submit" className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black rounded-xl px-6 py-3 transition-all text-sm shadow-xl shadow-purple-900/40 active:scale-95">
+            ADD TASK
+          </button>
           <input
             type="url"
-            placeholder="Task URL (e.g. https://github.com/org/repo)"
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none md:col-span-3"
+            placeholder="Task URL (GitHub Repository Link)"
+            className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none md:col-span-4 transition-all hover:bg-white/[0.05]"
             value={newForm.task_url}
             onChange={(e) => setNewForm({ ...newForm, task_url: e.target.value })}
           />
-          <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl px-6 py-2.5 transition-all text-sm shadow-lg shadow-purple-900/20 active:scale-95">
-            Add Task
-          </button>
         </form>
-      </div>
+      </motion.div>
 
       {/* Task List */}
       <div className="grid gap-4">
-        {tasks.map((task) => (
-          <div key={task.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:bg-white/[0.07]">
-            {editingId === task.id ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-                  <select
-                    className={cn(
-                      "bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-purple-500",
-                      editForm.title === 'web' ? "text-blue-400" :
-                      editForm.title === 'app' ? "text-emerald-400" :
-                      editForm.title === 'ml' ? "text-purple-400" :
-                      editForm.title === 'foss' ? "text-orange-400" : "text-white"
-                    )}
-                    value={editForm.title}
-                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  >
-                    <option className="bg-neutral-900 text-blue-400" value="web">Web</option>
-                    <option className="bg-neutral-900 text-emerald-400" value="app">App</option>
-                    <option className="bg-neutral-900 text-purple-400" value="ml">ML</option>
-                    <option className="bg-neutral-900 text-orange-400" value="foss">FOSS</option>
-                  </select>
-                  <select
-                    className={cn(
-                      "bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-purple-500",
-                      editForm.difficulty === 'easy' ? "text-green-400" :
-                      editForm.difficulty === 'medium' ? "text-yellow-400" :
-                      editForm.difficulty === 'hard' ? "text-red-400" : "text-white"
-                    )}
-                    value={editForm.difficulty}
-                    onChange={(e) => setEditForm({ ...editForm, difficulty: e.target.value })}
-                  >
-                    <option className="bg-neutral-900 text-green-400" value="easy">Easy</option>
-                    <option className="bg-neutral-900 text-yellow-400" value="medium">Medium</option>
-                    <option className="bg-neutral-900 text-red-400" value="hard">Hard</option>
-                  </select>
-                  <input
-                    type="number"
-                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500"
-                    value={editForm.points}
-                    onChange={(e) => setEditForm({ ...editForm, points: parseInt(e.target.value) })}
-                  />
-                </div>
-                <input
-                  type="url"
-                  placeholder="Task URL"
-                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
-                  value={editForm.task_url || ''}
-                  onChange={(e) => setEditForm({ ...editForm, task_url: e.target.value })}
-                />
-                <div className="flex gap-2">
-                  <button onClick={() => handleUpdate(task.id)} className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg transition-colors"><Save className="w-5 h-5" /></button>
-                  <button onClick={() => setEditingId(null)} className="p-2 text-gray-400 hover:bg-white/10 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-bold text-white tracking-wide">{task.github_identifier}</h3>
+        <AnimatePresence mode="popLayout">
+          {tasks.map((task) => (
+            <motion.div 
+              layout
+              key={task.id} 
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className={cn(
+                "glass rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all",
+                editingId === task.id ? "ring-2 ring-purple-500/50 bg-white/[0.06]" : "hover:bg-white/[0.05]"
+              )}
+            >
+              {editingId === task.id ? (
+                <>
+                  <div className="flex flex-col gap-4 flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <select
+                        className={cn(
+                          "bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500",
+                          editForm.title === 'web' ? "text-blue-400" :
+                          editForm.title === 'app' ? "text-emerald-400" :
+                          editForm.title === 'ml' ? "text-purple-400" :
+                          editForm.title === 'foss' ? "text-orange-400" : "text-white"
+                        )}
+                        value={editForm.title}
+                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                      >
+                        <option className="bg-neutral-950 text-blue-400" value="web">Web</option>
+                        <option className="bg-neutral-950 text-emerald-400" value="app">App</option>
+                        <option className="bg-neutral-950 text-purple-400" value="ml">ML</option>
+                        <option className="bg-neutral-950 text-orange-400" value="foss">FOSS</option>
+                      </select>
+                      <select
+                        className={cn(
+                          "bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500",
+                          editForm.difficulty === 'easy' ? "text-green-400" :
+                          editForm.difficulty === 'medium' ? "text-yellow-400" :
+                          editForm.difficulty === 'hard' ? "text-red-400" : "text-white"
+                        )}
+                        value={editForm.difficulty}
+                        onChange={(e) => setEditForm({ ...editForm, difficulty: e.target.value })}
+                      >
+                        <option className="bg-neutral-950 text-green-400" value="easy">Easy</option>
+                        <option className="bg-neutral-950 text-yellow-400" value="medium">Medium</option>
+                        <option className="bg-neutral-950 text-red-400" value="hard">Hard</option>
+                      </select>
+                      <div className="relative group">
+                        <input
+                          type="number"
+                          className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                          value={editForm.points}
+                          onChange={(e) => setEditForm({ ...editForm, points: parseInt(e.target.value) })}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-500 group-focus-within:text-purple-400">PTS</span>
+                      </div>
+                    </div>
+                    <input
+                      type="url"
+                      placeholder="Task Repository URL"
+                      className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                      value={editForm.task_url || ''}
+                      onChange={(e) => setEditForm({ ...editForm, task_url: e.target.value })}
+                    />
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-gray-400 uppercase font-black tracking-wider">{task.title}</p>
-                    <span className={cn(
-                      "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border shadow-sm",
-                      task.difficulty === 'easy' ? "text-green-400 border-green-400/20 bg-green-400/5" :
-                      task.difficulty === 'medium' ? "text-yellow-400 border-yellow-400/20 bg-yellow-400/5" :
-                      "text-red-400 border-red-400/20 bg-red-400/5"
-                    )}>
-                      {task.difficulty}
-                    </span>
-                    {task.task_url && (
-                      <a href={task.task_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-purple-400 hover:text-purple-300 underline">repo ↗</a>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-8">
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-purple-400">+{task.points}</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Points</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => {
-                        setEditingId(task.id)
-                        setEditForm(task)
-                      }}
-                      className="p-2.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleUpdate(task.id)} 
+                      className="p-3 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-xl transition-all active:scale-95 shadow-lg shadow-green-900/10"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Save className="w-5 h-5" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(task.id)}
-                      className="p-2.5 text-gray-400 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all"
+                    <button 
+                      onClick={() => setEditingId(null)} 
+                      className="p-3 bg-white/5 text-gray-400 hover:bg-white/10 rounded-xl transition-all active:scale-95"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+                </>
+              ) : (
+                <>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={cn(
+                        "p-2 rounded-lg bg-white/5",
+                        task.title === 'web' ? "text-blue-400" :
+                        task.title === 'app' ? "text-emerald-400" :
+                        task.title === 'ml' ? "text-purple-400" : "text-orange-400"
+                      )}>
+                        <LayoutGrid className="w-4 h-4" />
+                      </div>
+                      <h3 className="font-black text-white tracking-tight text-lg">{task.github_identifier}</h3>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">{task.title}</p>
+                      <span className={cn(
+                        "text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border shadow-sm",
+                        task.difficulty === 'easy' ? "text-green-400 border-green-500/20 bg-green-500/10" :
+                        task.difficulty === 'medium' ? "text-yellow-400 border-yellow-500/20 bg-yellow-400/10" :
+                        "text-red-400 border-red-500/20 bg-red-500/10"
+                      )}>
+                        {task.difficulty}
+                      </span>
+                      {task.task_url && (
+                        <a 
+                          href={task.task_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-[10px] font-black text-purple-400 hover:text-purple-300 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 transition-colors"
+                        >
+                          REPO ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-8">
+                    <div className="text-right">
+                      <p className="text-2xl font-black bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">+{task.points}</p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Points</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingId(task.id)
+                          setEditForm(task)
+                        }}
+                        className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        className="p-3 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all active:scale-95"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   )
