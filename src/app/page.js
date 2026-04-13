@@ -102,79 +102,87 @@ export default function RootPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" />
-        <p className="text-gray-400 font-medium animate-pulse">Loading DevSphere...</p>
+    <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
+      {/* Animated orbs for loading */}
+      <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-purple-600/20 rounded-full blur-[120px] mesh-orb-1" />
+      <div className="absolute bottom-1/4 right-1/3 w-48 h-48 bg-blue-600/15 rounded-full blur-[100px] mesh-orb-2" />
+      <div className="flex flex-col items-center gap-5">
+        <div className="relative">
+          <div className="w-14 h-14 border-[3px] border-purple-500/10 border-t-purple-500 rounded-full animate-spin" />
+          <div className="absolute inset-0 w-14 h-14 bg-purple-500/10 rounded-full blur-xl animate-pulse-glow" />
+        </div>
+        <p className="text-gray-500 text-sm font-medium tracking-wider uppercase animate-pulse">Loading DevSphere...</p>
       </div>
     </div>
   )
 
+  const tabs = [
+    { key: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+    { key: 'submissions', label: 'Activity', icon: History },
+    { key: 'tasks', label: 'Tasks', icon: LayoutList },
+    ...(user ? [{ key: 'mytasks', label: 'My Tasks', icon: CheckCircle2 }] : []),
+  ]
+
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8 md:pt-8 md:pb-12">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-xl">
-            <button
-              onClick={() => setTab('leaderboard')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-                activeTab === 'leaderboard' ? "bg-white text-black shadow-lg" : "text-gray-400 hover:text-white"
-              )}
-            >
-              <Trophy className="w-4 h-4" />
-              Leaderboard
-            </button>
-            <button
-              onClick={() => setTab('submissions')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-                activeTab === 'submissions' ? "bg-white text-black shadow-lg" : "text-gray-400 hover:text-white"
-              )}
-            >
-              <History className="w-4 h-4" />
-              Recent Activity
-            </button>
-            <button
-              onClick={() => setTab('tasks')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-                activeTab === 'tasks' ? "bg-white text-black shadow-lg" : "text-gray-400 hover:text-white"
-              )}
-            >
-              <LayoutList className="w-4 h-4" />
-              Tasks
-            </button>
-            {user && (
-              <button
-                onClick={() => setTab('mytasks')}
-                className={cn(
-                  "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-                  activeTab === 'mytasks' ? "bg-white text-black shadow-lg" : "text-gray-400 hover:text-white"
-                )}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                My Tasks
-              </button>
-            )}
+    <div className="min-h-screen bg-black text-white relative overflow-hidden noise-overlay">
+      {/* ═══ Animated mesh background ═══ */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-purple-600/[0.07] rounded-full blur-[150px] mesh-orb-1" />
+        <div className="absolute top-[30%] right-[-10%] w-[400px] h-[400px] bg-blue-600/[0.05] rounded-full blur-[130px] mesh-orb-2" />
+        <div className="absolute bottom-[-10%] left-[30%] w-[450px] h-[450px] bg-indigo-600/[0.06] rounded-full blur-[140px] mesh-orb-3" />
+        {/* Radial vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_70%,rgba(0,0,0,0.8)_100%)]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8 md:pt-8 md:pb-12 relative z-10">
+        {/* ═══ Premium Tab Switcher ═══ */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+          <div className="flex glass rounded-2xl p-1.5 gap-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.key
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setTab(tab.key)}
+                  className={cn(
+                    "relative px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2",
+                    isActive 
+                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/20" 
+                      : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.04]"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTabGlow"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 -z-10"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
 
+        {/* ═══ Tab Content ═══ */}
         <AnimatePresence mode="wait">
           {activeTab === 'leaderboard' ? (
-            <motion.div key="leaderboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <motion.div key="leaderboard" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
               <Leaderboard data={leaderboard} tasks={tasks} completions={allCompletions} eventStartTime={eventStartTime} currentProfileId={user?.id} highlightUsername={registeredUsername} />
             </motion.div>
           ) : activeTab === 'submissions' ? (
-            <motion.div key="submissions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <motion.div key="submissions" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
               <SubmissionsList submissions={submissions} isAdmin={false} />
             </motion.div>
           ) : activeTab === 'mytasks' && user ? (
-            <motion.div key="mytasks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <motion.div key="mytasks" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
               <SubmissionsList submissions={submissions.filter(s => s.profile_id === user.id)} isAdmin={false} />
             </motion.div>
           ) : activeTab === 'tasks' ? (
-            <motion.div key="tasks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <motion.div key="tasks" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
               <AllTasks tasks={tasks} />
             </motion.div>
           ) : null}
