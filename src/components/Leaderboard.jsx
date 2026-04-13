@@ -86,7 +86,7 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
   const [hoveredRow, setHoveredRow] = useState(null)
   const [flashedRows, setFlashedRows] = useState(new Set())
   const prevRanksRef = useRef({})
-  const ITEMS_PER_PAGE = 15
+  const ITEMS_PER_PAGE = 20
 
   // ─── Build category structure ───
   const categoryStructure = useMemo(() => {
