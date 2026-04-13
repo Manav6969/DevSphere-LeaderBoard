@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, History, Github, CheckCircle2, User } from 'lucide-react'
+import { Trophy, History, Github, CheckCircle2, User, LayoutList } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import dynamic from 'next/dynamic'
@@ -13,6 +13,9 @@ const Leaderboard = dynamic(() => import('@/components/Leaderboard'), {
 })
 const SubmissionsList = dynamic(() => import('@/components/SubmissionsList'), {
   loading: () => <div className="h-96 flex items-center justify-center bg-white/5 rounded-2xl animate-pulse text-gray-500">Loading Submissions...</div>
+})
+const AllTasks = dynamic(() => import('@/components/AllTasks'), {
+  loading: () => <div className="h-96 flex items-center justify-center bg-white/5 rounded-2xl animate-pulse text-gray-500">Loading Tasks...</div>
 })
 import Link from 'next/link'
 
@@ -42,7 +45,7 @@ export default function RootPage() {
           const [lbRes, subRes, tasksRes, allCompRes, eventTimeRes] = await Promise.all([
             supabase.from('leaderboard').select('id, github_username, total_points, total_time, tasks_completed').order('total_points', { ascending: false }).order('total_time', { ascending: true }),
             supabase.from('task_completions').select('id, status, created_at, profile_id, profiles(email, github_username), tasks(title, difficulty, points)').order('created_at', { ascending: false }).limit(100),
-            supabase.from('tasks').select('id, title, difficulty, points, github_identifier, task_url').order('title').order('difficulty'),
+            supabase.from('tasks').select('id, title, difficulty, points, github_identifier, task_url, description').order('title').order('difficulty'),
             supabase.from('task_completions').select('id, profile_id, task_id, status, created_at, payload').eq('status', 'valid'),
             fetch('/api/event-start-time').then(r => r.json()).catch(() => ({ event_start_time: null }))
           ])
@@ -132,6 +135,16 @@ export default function RootPage() {
               <History className="w-4 h-4" />
               Recent Activity
             </button>
+            <button
+              onClick={() => setTab('tasks')}
+              className={cn(
+                "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
+                activeTab === 'tasks' ? "bg-white text-black shadow-lg" : "text-gray-400 hover:text-white"
+              )}
+            >
+              <LayoutList className="w-4 h-4" />
+              Tasks
+            </button>
             {user && (
               <button
                 onClick={() => setTab('mytasks')}
@@ -159,6 +172,10 @@ export default function RootPage() {
           ) : activeTab === 'mytasks' && user ? (
             <motion.div key="mytasks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               <SubmissionsList submissions={submissions.filter(s => s.profile_id === user.id)} isAdmin={false} />
+            </motion.div>
+          ) : activeTab === 'tasks' ? (
+            <motion.div key="tasks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <AllTasks tasks={tasks} />
             </motion.div>
           ) : null}
         </AnimatePresence>
