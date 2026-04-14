@@ -456,7 +456,7 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                           </motion.span>
                         </td>
 
-                        {/* Penalty Time */}
+                        {/* Total Time */}
                         <td className="px-4 py-3.5 text-center border-l border-white/[0.04]">
                           <span className="text-[11px] font-mono text-gray-500 tabular-nums tracking-tight">
                             {entry.solvedCount > 0
@@ -611,7 +611,7 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                 <p className="font-mono font-bold text-white text-lg">{userEntry.solvedCount || 0}<span className="text-gray-700">/{allTasks.length}</span></p>
               </div>
               <div className="hidden sm:block text-right">
-                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Penalty</p>
+                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Time</p>
                 <p className="font-mono text-gray-400 text-sm tabular-nums">{userEntry.solvedCount > 0 ? formatTimeFull(userEntry.totalPenaltySeconds) : '--:--:--'}</p>
               </div>
               <div className="text-right">
