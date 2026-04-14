@@ -452,18 +452,16 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                                 rank <= 3 ? "text-green-400" : "text-white"
                             )}
                           >
-                            {entry.computedScore || entry.total_points || 0}
+                            {entry.computedScore ?? 0}
                           </motion.span>
                         </td>
 
                         {/* Penalty Time */}
                         <td className="px-4 py-3.5 text-center border-l border-white/[0.04]">
                           <span className="text-[11px] font-mono text-gray-500 tabular-nums tracking-tight">
-                            {entry.totalPenaltySeconds > 0
+                            {entry.solvedCount > 0
                               ? formatTimeFull(entry.totalPenaltySeconds)
-                              : entry.total_time && entry.total_time > 0
-                                ? formatTimeFull(Math.floor(entry.total_time))
-                                : '--:--:--'}
+                              : '--:--:--'}
                           </span>
                         </td>
 
@@ -614,7 +612,7 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
               </div>
               <div className="hidden sm:block text-right">
                 <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Penalty</p>
-                <p className="font-mono text-gray-400 text-sm tabular-nums">{formatTimeFull(userEntry.totalPenaltySeconds || userEntry.total_time || 0)}</p>
+                <p className="font-mono text-gray-400 text-sm tabular-nums">{userEntry.solvedCount > 0 ? formatTimeFull(userEntry.totalPenaltySeconds) : '--:--:--'}</p>
               </div>
               <div className="text-right">
                 <p className="text-[8px] text-purple-400 font-bold uppercase tracking-[0.15em]">Score</p>
@@ -624,7 +622,7 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                   animate={{ scale: 1 }}
                   className="font-black text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400"
                 >
-                  {(userEntry.computedScore || userEntry.total_points || 0).toLocaleString()}
+                  {(userEntry.computedScore ?? 0).toLocaleString()}
                 </motion.p>
               </div>
             </div>

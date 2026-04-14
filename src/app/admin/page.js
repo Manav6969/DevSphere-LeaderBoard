@@ -238,7 +238,6 @@ function TaskManagement({ tasks, onUpdate }) {
                         <LayoutGrid className="w-4 h-4" />
                       </div>
                       <h3 className="font-black text-white tracking-tight text-lg">{task.task_name || task.github_identifier}</h3>
-                      <span className="text-[10px] text-gray-500 font-mono">({task.github_identifier})</span>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
                       <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">{task.title}</p>

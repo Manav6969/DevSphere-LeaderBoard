@@ -140,7 +140,6 @@ export default function AllTasks({ tasks = [] }) {
                           {task.task_name || task.github_identifier}
                         </h3>
                       )}
-                      <span className="text-[10px] text-gray-500 font-mono">({task.github_identifier})</span>
                     </div>
 
                     {/* Bottom: Open Task Link */}
