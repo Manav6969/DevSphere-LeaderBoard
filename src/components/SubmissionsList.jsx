@@ -32,7 +32,8 @@ export default function SubmissionsList({ submissions, isAdmin, onToggleStatus }
                   <p className="text-[10px] text-gray-500">{sub.profiles?.email || '—'}</p>
                 </td>
                 <td className="px-6 py-4">
-                  <p className="text-sm text-gray-300">{sub.tasks?.title || '—'}</p>
+                  <p className="text-sm text-gray-300 font-bold">{sub.tasks?.task_name || sub.tasks?.github_identifier || '—'}</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest">{sub.tasks?.title || '—'}</p>
                   <p className="text-[10px] text-gray-500">{new Date(sub.created_at).toLocaleString()}</p>
                 </td>
                 <td className="px-6 py-4 text-xs font-medium uppercase">

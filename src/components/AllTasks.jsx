@@ -124,21 +124,24 @@ export default function AllTasks({ tasks = [] }) {
                     </div>
 
                     {/* Task identifier — clickable if URL exists */}
-                    {task.task_url ? (
-                      <a
-                        href={task.task_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white font-bold text-sm tracking-wide hover:text-purple-300 transition-colors flex items-center gap-1.5 group/link"
-                      >
-                        {task.github_identifier}
-                        <ExternalLink className="w-3 h-3 text-gray-600 group-hover/link:text-purple-400 transition-colors" />
-                      </a>
-                    ) : (
-                      <h3 className="text-white/90 font-bold text-sm tracking-wide">
-                        {task.github_identifier}
-                      </h3>
-                    )}
+                    <div className="flex flex-col gap-0.5">
+                      {task.task_url ? (
+                        <a
+                          href={task.task_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-white font-bold text-sm tracking-wide hover:text-purple-300 transition-colors flex items-center gap-1.5 group/link"
+                        >
+                          {task.task_name || task.github_identifier}
+                          <ExternalLink className="w-3 h-3 text-gray-600 group-hover/link:text-purple-400 transition-colors" />
+                        </a>
+                      ) : (
+                        <h3 className="text-white font-bold text-sm tracking-wide">
+                          {task.task_name || task.github_identifier}
+                        </h3>
+                      )}
+                      <span className="text-[10px] text-gray-500 font-mono">({task.github_identifier})</span>
+                    </div>
 
                     {/* Bottom: Open Task Link */}
                     {task.task_url ? (

@@ -300,7 +300,7 @@ export default function Leaderboard({ data, tasks, completions, eventStartTime, 
                               target="_blank"
                               rel="noopener noreferrer"
                               className={cn("text-[11px] font-black uppercase hover:underline hover:brightness-125 transition-all cursor-pointer", colors.text)}
-                              title={`Open ${task.title} ${task.difficulty} task`}
+                              title={`Open ${task.task_name || task.github_identifier} task`}
                             >
                               {DIFFICULTY_LABELS[task.difficulty] || task.difficulty?.charAt(0)?.toUpperCase()}
                             </a>

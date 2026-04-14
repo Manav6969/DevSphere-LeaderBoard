@@ -12,7 +12,7 @@ import SubmissionsList from '@/components/SubmissionsList'
 
 function TaskManagement({ tasks, onUpdate }) {
   const [editingId, setEditingId] = useState(null)
-  const [newForm, setNewForm] = useState({ github_identifier: '', title: '', difficulty: 'medium', points: 0, task_url: '' })
+  const [newForm, setNewForm] = useState({ github_identifier: '', task_name: '', title: '', difficulty: 'medium', points: 0, task_url: '' })
   const [editForm, setEditForm] = useState({})
 
   const handleCreate = async (e) => {
@@ -20,7 +20,7 @@ function TaskManagement({ tasks, onUpdate }) {
     const { error } = await supabase.from('tasks').insert(newForm)
     if (error) alert(error.message)
     else {
-      setNewForm({ github_identifier: '', title: '', difficulty: 'medium', points: 0, task_url: '' })
+      setNewForm({ github_identifier: '', task_name: '', title: '', difficulty: 'medium', points: 0, task_url: '' })
       onUpdate()
     }
   }
@@ -63,6 +63,13 @@ function TaskManagement({ tasks, onUpdate }) {
             className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all hover:bg-white/[0.05]"
             value={newForm.github_identifier}
             onChange={(e) => setNewForm({ ...newForm, github_identifier: e.target.value })}
+          />
+          <input
+            type="text" required
+            placeholder="Display Name (e.g. My Awesome Task)"
+            className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all hover:bg-white/[0.05]"
+            value={newForm.task_name}
+            onChange={(e) => setNewForm({ ...newForm, task_name: e.target.value })}
           />
           <select
             required
@@ -186,6 +193,15 @@ function TaskManagement({ tasks, onUpdate }) {
                         onChange={(e) => setEditForm({ ...editForm, github_identifier: e.target.value })}
                       />
                       <input
+                        type="text"
+                        placeholder="Display Name"
+                        className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                        value={editForm.task_name || ''}
+                        onChange={(e) => setEditForm({ ...editForm, task_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                      <input
                         type="url"
                         placeholder="Task Repository URL"
                         className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 w-full"
@@ -221,7 +237,8 @@ function TaskManagement({ tasks, onUpdate }) {
                       )}>
                         <LayoutGrid className="w-4 h-4" />
                       </div>
-                      <h3 className="font-black text-white tracking-tight text-lg">{task.github_identifier}</h3>
+                      <h3 className="font-black text-white tracking-tight text-lg">{task.task_name || task.github_identifier}</h3>
+                      <span className="text-[10px] text-gray-500 font-mono">({task.github_identifier})</span>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
                       <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">{task.title}</p>
